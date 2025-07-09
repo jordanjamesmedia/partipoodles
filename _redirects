@@ -1,0 +1,20 @@
+# Redirects for Cloudflare Pages
+
+# Redirect www to non-www (if using custom domain)
+https://www.partipoodlesaustralia.com/* https://partipoodlesaustralia.com/:splat 301!
+
+# Redirect old URLs to new structure (if needed)
+/home /
+/home.html /
+/about-us /about.html
+/available /puppies.html
+/photos /gallery.html
+/contact-us /contact.html
+
+# SEO-friendly redirects
+/dogs /puppies.html
+/pups /puppies.html
+/breed /about.html
+/breeder /about.html
+/pics /gallery.html
+/pictures /gallery.html
