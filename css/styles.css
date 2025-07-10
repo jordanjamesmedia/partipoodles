@@ -263,8 +263,7 @@ header.scrolled .menu-toggle {
     background: linear-gradient(135deg, 
         rgba(199, 152, 107, 0.95) 0%, 
         rgba(166, 124, 82, 0.9) 50%, 
-        rgba(139, 69, 19, 0.95) 100%),
-        url('../images/hero-background.jpg') center/cover;
+        rgba(139, 69, 19, 0.95) 100%);
     color: white;
     text-align: center;
     padding: 8rem 0 4rem;
@@ -280,15 +279,13 @@ header.scrolled .menu-toggle {
         background: linear-gradient(135deg, 
             rgba(199, 152, 107, 0.95) 0%, 
             rgba(166, 124, 82, 0.9) 50%, 
-            rgba(139, 69, 19, 0.95) 100%),
-            url('../images/hero-background.jpg') center/cover;
+            rgba(139, 69, 19, 0.95) 100%);
     }
     50% {
         background: linear-gradient(135deg, 
             rgba(199, 152, 107, 0.9) 0%, 
             rgba(166, 124, 82, 0.95) 50%, 
-            rgba(139, 69, 19, 0.9) 100%),
-            url('../images/hero-background.jpg') center/cover;
+            rgba(139, 69, 19, 0.9) 100%);
     }
 }
 
@@ -693,7 +690,8 @@ section:nth-child(odd):not(.hero)::before {
 .puppy-card img {
     width: 100%;
     height: 250px;
-    object-fit: cover;
+    object-fit: contain;
+    background: #f8f8f8;
 }
 
 .puppy-info {
@@ -726,7 +724,8 @@ section:nth-child(odd):not(.hero)::before {
 .gallery-grid img {
     width: 100%;
     height: 280px;
-    object-fit: cover;
+    object-fit: contain;
+    background: #f8f8f8;
     border-radius: 15px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
