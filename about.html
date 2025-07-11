@@ -300,10 +300,16 @@
     
     function activateTimeline(index) {
       points.forEach((pt, i) => pt.classList.toggle('active', i === index));
-      // Update progress bar
+      // Update progress bar with both CSS custom property and direct style
       if (timeline) {
         const progress = ((index + 1) / points.length) * 100;
         timeline.style.setProperty('--progress', progress + '%');
+        
+        // Also update via style injection for better browser compatibility
+        const progressStyle = document.getElementById('timeline-progress-style');
+        if (progressStyle) {
+          progressStyle.textContent = `.timeline::after { height: ${progress}% !important; }`;
+        }
       }
     }
     
@@ -354,9 +360,9 @@
       activateTimeline(activeIndex);
     }
     
-    // Set CSS variable for progress bar
+    // Set CSS variable for progress bar - more robust implementation
     const style = document.createElement('style');
-    style.textContent = '.timeline::after { height: var(--progress, 0); }';
+    style.id = 'timeline-progress-style';
     document.head.appendChild(style);
     
     // Listen to scroll events

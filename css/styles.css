@@ -2299,7 +2299,7 @@ html {
   left: 50%;
   top: 40px;
   width: 2px;
-  height: 0;
+  height: var(--progress, 0%);
   background: linear-gradient(to bottom, #c7986b 0%, #a67c52 100%);
   transform: translateX(-50%);
   z-index: 1;
