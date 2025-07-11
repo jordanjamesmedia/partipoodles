@@ -2312,40 +2312,13 @@ html {
 }
 @media (max-width: 900px) {
   .about-timeline {
-    flex-direction: column;
-    gap: 1.5rem;
+    display: block;
   }
   .timeline {
-    position: static;
-    top: auto;
-    transform: none;
-    flex-direction: row;
-    min-width: 0;
-    width: 100%;
-    margin: 0 0 1.5rem 0;
-    justify-content: center;
-    height: auto;
+    display: none;
   }
   .timeline-indicator {
     display: none;
-  }
-  .timeline-point {
-    margin: 0 1.5rem;
-  }
-  .timeline-point[data-label]::after {
-    left: 50%;
-    top: 36px;
-    transform: translateX(-50%);
-    white-space: normal;
-    font-size: 0.95rem;
-  }
-  .timeline::before {
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(to right, #c7986b 0%, #fff 100%);
-    transform: translateY(-50%);
   }
 }
 
