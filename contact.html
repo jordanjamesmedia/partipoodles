@@ -59,10 +59,12 @@
     </header>
 
     <main>
-        <section class="hero" style="padding: 4rem 0; background: linear-gradient(135deg, #8b4513 0%, #d2691e 100%);">
-            <div class="container text-center">
-                <h1>Contact Us</h1>
-                <p>Ready to welcome a Standard Parti Poodle into your family? We'd love to hear from you!</p>
+        <section class="hero contact-hero simple-hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Contact Us</h1>
+                    <p>Ready to welcome a Standard Parti Poodle into your family? We'd love to hear from you!</p>
+                </div>
             </div>
         </section>
 
@@ -105,91 +107,59 @@
                         </div>
                     </div>
                     
-                    <!-- Contact Form -->
+                    <!-- Email Inquiry Instructions -->
                     <div>
-                        <h2>Send Us a Message</h2>
-                        <form action="mailto:standardpartipoodlesaustralia@email.com" method="post" enctype="text/plain">
-                            <div class="form-group">
-                                <label for="name">Full Name <span style="color: #d73527;">*</span></label>
-                                <input type="text" id="name" name="name" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="email">Email Address <span style="color: #d73527;">*</span></label>
-                                <input type="email" id="email" name="email" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" name="phone">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="inquiry-type">Inquiry Type</label>
-                                <select id="inquiry-type" name="inquiry-type">
-                                    <option value="">Please select...</option>
-                                    <option value="available-puppies">Available Puppies</option>
-                                    <option value="specific-puppy">Specific Puppy Inquiry</option>
-                                    <option value="future-litters">Future Litters</option>
-                                    <option value="general-information">General Information</option>
-                                    <option value="visit-appointment">Schedule a Visit</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="preferred-gender">Preferred Gender</label>
-                                <select id="preferred-gender" name="preferred-gender">
-                                    <option value="">No preference</option>
-                                    <option value="female">Female</option>
-                                    <option value="male">Male</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="preferred-colors">Preferred Colors</label>
-                                <select id="preferred-colors" name="preferred-colors">
-                                    <option value="">No preference</option>
-                                    <option value="black-white">Black & White</option>
-                                    <option value="brown-white">Brown & White</option>
-                                    <option value="other-parti">Other Parti Colors</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="timeline">Timeline</label>
-                                <select id="timeline" name="timeline">
-                                    <option value="">Please select...</option>
-                                    <option value="immediately">Ready now</option>
-                                    <option value="1-3-months">1-3 months</option>
-                                    <option value="3-6-months">3-6 months</option>
-                                    <option value="6-12-months">6-12 months</option>
-                                    <option value="flexible">Flexible</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="experience">Previous Dog/Poodle Experience</label>
-                                <select id="experience" name="experience">
-                                    <option value="">Please select...</option>
-                                    <option value="first-time">First-time dog owner</option>
-                                    <option value="experienced-dogs">Experienced with dogs</option>
-                                    <option value="experienced-poodles">Experienced with poodles</option>
-                                    <option value="experienced-standard">Experienced with Standard Poodles</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="message">Message <span style="color: #d73527;">*</span></label>
-                                <textarea id="message" name="message" placeholder="Please tell us about yourself, your family, living situation, and what you're looking for in a Standard Parti Poodle puppy. The more information you provide, the better we can help you find the perfect match!" required></textarea>
-                            </div>
-                            
-                            <button type="submit" class="btn">Send Message</button>
-                        </form>
+                        <h2>Send Us an Email Inquiry</h2>
+                        
+                        <div class="card">
+                            <h3>Email Us Directly</h3>
+                            <p>Send your inquiry to: <a href="mailto:standardpartipoodlesaustralia@gmail.com" style="color: #c7986b; font-weight: 600;">standardpartipoodlesaustralia@gmail.com</a></p>
+                            <p>We typically respond within 24 hours and look forward to helping you find your perfect puppy!</p>
+                        </div>
                         
                         <div class="card mt-2">
-                            <h4>What to Expect</h4>
-                            <p>We typically respond to inquiries within 24 hours. Your message helps us understand your needs and preferences so we can provide the most helpful information about our available puppies.</p>
+                            <h3>What to Include in Your Email</h3>
+                            <p>To help us provide the most helpful response, please include the following information in your email:</p>
+                            
+                            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #c7986b;">📝 Your Details:</h4>
+                            <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                                <li>Your full name and contact phone number</li>
+                                <li>Your location (city/state)</li>
+                                <li>Best time to call you</li>
+                            </ul>
+                            
+                            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #c7986b;">🐕 What You're Looking For:</h4>
+                            <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                                <li>Gender preference (male/female/no preference)</li>
+                                <li>Color preference (red, apricot/cream, sable, black, or no preference)</li>
+                                <li>Timeline (ready now, 1-3 months, 3-6 months, flexible)</li>
+                                <li>Specific puppy interest (if you've seen one you like on our website)</li>
+                            </ul>
+                            
+                            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #c7986b;">🏠 About Your Family:</h4>
+                            <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                                <li>Tell us about your family (adults, children, ages)</li>
+                                <li>Your living situation (house, apartment, yard size)</li>
+                                <li>Previous experience with dogs or poodles</li>
+                                <li>Why you're interested in a Standard Parti Poodle</li>
+                                <li>Your lifestyle and activity level</li>
+                            </ul>
+                            
+                            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; color: #c7986b;">❓ Any Questions:</h4>
+                            <ul style="margin-left: 1.5rem; line-height: 1.8;">
+                                <li>Questions about our breeding program</li>
+                                <li>Questions about specific puppies</li>
+                                <li>Interest in scheduling a visit</li>
+                                <li>Any other questions or concerns</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="card mt-2">
+                            <h4>Quick Contact Options</h4>
+                            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                                <a href="mailto:standardpartipoodlesaustralia@gmail.com?subject=Puppy Inquiry" class="btn" style="flex: 1; text-align: center;">Send Email</a>
+                                <a href="tel:+61498114541" class="btn btn-secondary" style="flex: 1; text-align: center;">Call Now</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -207,7 +177,7 @@
                         <h3>About Our Puppies</h3>
                         <div class="card mb-2">
                             <h4>How much do puppies cost?</h4>
-                            <p>Our Standard Parti Poodle puppies are $3,000 AUD. This includes health testing, vaccinations, microchip, health guarantee, and lifetime breeder support.</p>
+                            <p>Our Standard Parti Poodle puppies range from $2,500 - $3,500 AUD. This includes health testing, vaccinations, microchip, health guarantee, and lifetime breeder support.</p>
                         </div>
                         
                         <div class="card mb-2">
@@ -379,6 +349,54 @@
                 return false;
             }
         });
+
+        // Walking paw prints animation
+        function createWalkingPaws() {
+            const heroSections = document.querySelectorAll('.hero');
+            
+            heroSections.forEach(hero => {
+                function addPawPrint() {
+                    const paw = document.createElement('div');
+                    paw.className = 'hero-paw';
+                    
+                    // Random size between 30px and 80px
+                    const size = Math.random() * 50 + 30;
+                    paw.style.width = size + 'px';
+                    paw.style.height = size + 'px';
+                    
+                    // Random position
+                    const x = Math.random() * (hero.offsetWidth - 50);
+                    const y = Math.random() * (hero.offsetHeight - 50);
+                    
+                    paw.style.left = x + 'px';
+                    paw.style.top = y + 'px';
+                    
+                    hero.appendChild(paw);
+                    
+                    // Remove after animation completes
+                    setTimeout(() => {
+                        if (paw.parentNode) {
+                            paw.parentNode.removeChild(paw);
+                        }
+                    }, 3000);
+                }
+                
+                // Add paw prints at random intervals
+                function schedulePaw() {
+                    addPawPrint();
+                    const nextPaw = Math.random() * 2000 + 1000; // 1-3 seconds
+                    setTimeout(schedulePaw, nextPaw);
+                }
+                
+                // Start the walking animation
+                setTimeout(schedulePaw, Math.random() * 1000);
+            });
+        }
+
+        // Start paw prints when page loads
+        document.addEventListener('DOMContentLoaded', createWalkingPaws);
+
+        
     </script>
 </body>
 </html>
