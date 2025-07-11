@@ -144,6 +144,7 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
+    position: relative;
 }
 
 .logo {
@@ -255,6 +256,47 @@ header.scrolled .menu-toggle {
 .menu-toggle:hover {
     background: rgba(199, 152, 107, 0.1);
     color: #c7986b;
+}
+
+/* Show hamburger menu on mobile and hide desktop nav */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+    
+    nav ul {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        flex-direction: column;
+        padding: 2rem 1rem;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+        border-top: 1px solid rgba(199, 152, 107, 0.1);
+        gap: 0;
+        z-index: 1000;
+    }
+    
+    nav ul.active,
+    nav ul.show {
+        display: flex;
+    }
+    
+    nav ul li {
+        margin-bottom: 1rem;
+    }
+    
+    nav a {
+        padding: 1rem 0;
+        font-size: 1.1rem;
+    }
+    
+    .phone-cta {
+        display: none;
+    }
 }
 
 /* Hero Section - Redesigned */
@@ -1638,7 +1680,8 @@ html {
     }
     
     .hero-carousel {
-        display: none;
+        order: 1;
+        margin-bottom: 1rem;
     }
     
     .hero h1 {
@@ -1778,45 +1821,9 @@ html {
         padding: 0 1rem;
     }
     
-    nav ul {
-        display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(20px);
-        flex-direction: column;
-        padding: 2rem 1rem;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
-        border-top: 1px solid rgba(199, 152, 107, 0.1);
-        gap: 0;
-        z-index: 1000;
-    }
     
-    nav ul.active {
-        display: flex;
-    }
     
-    nav ul.show {
-        display: flex;
-    }
-    
-    nav ul li {
-        margin-bottom: 1rem;
-    }
-    
-    nav a {
-        padding: 1rem 0;
-        font-size: 1.1rem;
-    }
-    
-    .phone-cta {
-        margin-left: 0;
-        margin-top: 1rem;
-        text-align: center;
-        display: block;
-    }
+
     
     .menu-toggle {
         display: block;
