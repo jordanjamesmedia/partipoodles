@@ -1,0 +1,137 @@
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <h3><i class="bi bi-images"></i> Gallery Photos</h3>
+            <div class="stat-value"><%= stats.photos %></div>
+            <p class="mb-0 text-muted">Active photos</p>
+            <a href="/admin/gallery" class="btn btn-sm btn-primary mt-3">Manage Gallery</a>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <h3><i class="bi bi-heart-fill"></i> Available Puppies</h3>
+            <div class="stat-value"><%= stats.puppies %></div>
+            <p class="mb-0 text-muted">Currently available</p>
+            <a href="/admin/puppies" class="btn btn-sm btn-primary mt-3">Manage Puppies</a>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <h3><i class="bi bi-cloud-upload"></i> Quick Upload</h3>
+            <div class="stat-value"><i class="bi bi-camera" style="font-size: 2rem;"></i></div>
+            <p class="mb-0 text-muted">Add new photo</p>
+            <a href="/admin/gallery" class="btn btn-sm btn-primary mt-3">Upload Photo</a>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <h3><i class="bi bi-plus-circle"></i> Add Puppy</h3>
+            <div class="stat-value"><i class="bi bi-plus-lg" style="font-size: 2rem;"></i></div>
+            <p class="mb-0 text-muted">List new puppy</p>
+            <a href="/admin/puppies" class="btn btn-sm btn-primary mt-3">Add Puppy</a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="content-wrapper">
+            <h2 class="mb-4"><i class="bi bi-clock-history"></i> Recent Activity</h2>
+            
+            <% if (activities && activities.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Resource</th>
+                            <th>Date/Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% activities.forEach(activity => { %>
+                        <tr>
+                            <td><%= activity.username %></td>
+                            <td>
+                                <% 
+                                const actionLabels = {
+                                    'login': 'Logged in',
+                                    'upload_photo': 'Uploaded photo',
+                                    'update_photo': 'Updated photo',
+                                    'delete_photo': 'Deleted photo',
+                                    'create_puppy': 'Added puppy',
+                                    'update_puppy': 'Updated puppy',
+                                    'delete_puppy': 'Deleted puppy',
+                                    'add_puppy_image': 'Added puppy image',
+                                    'delete_puppy_image': 'Deleted puppy image'
+                                };
+                                %>
+                                <%= actionLabels[activity.action] || activity.action %>
+                            </td>
+                            <td>
+                                <% if (activity.details && activity.details.title) { %>
+                                    <%= activity.details.title %>
+                                <% } else if (activity.details && activity.details.name) { %>
+                                    <%= activity.details.name %>
+                                <% } else if (activity.resource_type) { %>
+                                    <%= activity.resource_type %>
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td>
+                                <% 
+                                const date = new Date(activity.created_at);
+                                const timeAgo = getTimeAgo(date);
+                                %>
+                                <span title="<%= date.toLocaleString() %>"><%= timeAgo %></span>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            <% } else { %>
+            <p class="text-muted">No recent activity to display.</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<%
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) {
+        return Math.floor(interval) + " years ago";
+    }
+    interval = seconds / 2592000;
+    if (interval > 1) {
+        return Math.floor(interval) + " months ago";
+    }
+    interval = seconds / 86400;
+    if (interval > 1) {
+        return Math.floor(interval) + " days ago";
+    }
+    interval = seconds / 3600;
+    if (interval > 1) {
+        return Math.floor(interval) + " hours ago";
+    }
+    interval = seconds / 60;
+    if (interval > 1) {
+        return Math.floor(interval) + " minutes ago";
+    }
+    return "Just now";
+}
+%>
