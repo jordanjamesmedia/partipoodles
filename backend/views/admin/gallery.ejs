@@ -1,0 +1,281 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Gallery Management</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="bi bi-cloud-upload"></i> Upload Photo
+            </button>
+        </div>
+    </div>
+</div>
+
+<% if (success && success.length > 0) { %>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<div class="content-wrapper">
+    <div class="row" id="gallery-grid">
+        <% if (photos && photos.length > 0) { %>
+            <% photos.forEach(photo => { %>
+            <div class="col-md-4 col-lg-3 mb-4" data-photo-id="<%= photo.id %>">
+                <div class="card h-100">
+                    <img src="<%= photo.image_url %>" class="card-img-top image-preview" alt="<%= photo.title %>" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= photo.title %></h5>
+                        <p class="card-text text-muted small"><%= photo.caption %></p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge <%= photo.is_active ? 'bg-success' : 'bg-secondary' %>">
+                                <%= photo.is_active ? 'Active' : 'Inactive' %>
+                            </span>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary edit-photo" data-photo='<%= JSON.stringify(photo) %>'>
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger delete-photo" data-id="<%= photo.id %>" data-title="<%= photo.title %>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% }); %>
+        <% } else { %>
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="bi bi-images" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No photos in gallery yet. Upload your first photo!</p>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Select Image</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        <div class="form-text">Maximum file size: 10MB. Supported formats: JPG, PNG, GIF, WebP</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="caption" class="form-label">Caption</label>
+                        <textarea class="form-control" id="caption" name="caption" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="category" name="category" placeholder="e.g., Puppies, Adults, Show">
+                    </div>
+                    <div class="mb-3">
+                        <label for="display_order" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="display_order" name="display_order" value="0">
+                        <div class="form-text">Lower numbers appear first</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload"></i> Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id" name="id">
+                    <div class="mb-3 text-center">
+                        <img id="edit-preview" src="" alt="" class="img-fluid rounded" style="max-height: 200px;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="edit-title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-caption" class="form-label">Caption</label>
+                        <textarea class="form-control" id="edit-caption" name="caption" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-category" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="edit-category" name="category">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-display_order" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="edit-display_order" name="display_order">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="edit-is_active" name="is_active">
+                            <label class="form-check-label" for="edit-is_active">
+                                Active (visible on website)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Upload form handler
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+        
+        const response = await fetch('/admin/api/gallery', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.message || 'Upload failed'));
+        }
+    } catch (error) {
+        alert('Error uploading photo: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// Edit photo handler
+document.querySelectorAll('.edit-photo').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const photo = JSON.parse(btn.dataset.photo);
+        document.getElementById('edit-id').value = photo.id;
+        document.getElementById('edit-title').value = photo.title;
+        document.getElementById('edit-caption').value = photo.caption || '';
+        document.getElementById('edit-category').value = photo.category || '';
+        document.getElementById('edit-display_order').value = photo.display_order;
+        document.getElementById('edit-is_active').checked = photo.is_active;
+        document.getElementById('edit-preview').src = photo.image_url;
+        
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    });
+});
+
+// Edit form handler
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const id = formData.get('id');
+    const data = {
+        title: formData.get('title'),
+        caption: formData.get('caption'),
+        category: formData.get('category'),
+        display_order: parseInt(formData.get('display_order')),
+        is_active: formData.get('is_active') === 'on'
+    };
+    
+    try {
+        const response = await fetch(`/admin/api/gallery/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            window.location.reload();
+        } else {
+            alert('Error: ' + (result.message || 'Update failed'));
+        }
+    } catch (error) {
+        alert('Error updating photo: ' + error.message);
+    }
+});
+
+// Delete photo handler
+document.querySelectorAll('.delete-photo').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        
+        if (!confirm(`Are you sure you want to delete "${title}"?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/admin/api/gallery/${id}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.message || 'Delete failed'));
+            }
+        } catch (error) {
+            alert('Error deleting photo: ' + error.message);
+        }
+    });
+});
+
+// Image preview on file select
+document.getElementById('image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // Could add preview here if needed
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>

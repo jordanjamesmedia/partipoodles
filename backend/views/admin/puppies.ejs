@@ -1,0 +1,239 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Puppy Management</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPuppyModal">
+                <i class="bi bi-plus-circle"></i> Add New Puppy
+            </button>
+        </div>
+    </div>
+</div>
+
+<% if (success && success.length > 0) { %>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<% if (error && error.length > 0) { %>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<div class="content-wrapper">
+    <% if (puppies && puppies.length > 0) { %>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Photo</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Color</th>
+                    <th>DOB</th>
+                    <th>Status</th>
+                    <th>Images</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% puppies.forEach(puppy => { %>
+                <tr>
+                    <td>
+                        <% if (puppy.main_image_url) { %>
+                        <img src="<%= puppy.main_image_url %>" alt="<%= puppy.name %>" class="image-preview">
+                        <% } else { %>
+                        <div class="text-center" style="width: 100px; height: 100px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                            <i class="bi bi-camera" style="font-size: 2rem; color: #ccc;"></i>
+                        </div>
+                        <% } %>
+                    </td>
+                    <td><strong><%= puppy.name %></strong></td>
+                    <td><%= puppy.gender %></td>
+                    <td><%= puppy.color || '-' %></td>
+                    <td>
+                        <% if (puppy.dob) { %>
+                            <%= new Date(puppy.dob).toLocaleDateString() %>
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </td>
+                    <td>
+                        <span class="puppy-status <%= puppy.status %>">
+                            <%= puppy.status %>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary"><%= puppy.image_count %> images</span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="/admin/puppies/<%= puppy.id %>/edit" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <button class="btn btn-outline-danger delete-puppy" data-id="<%= puppy.id %>" data-name="<%= puppy.name %>">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+    <% } else { %>
+    <div class="text-center py-5">
+        <i class="bi bi-heart" style="font-size: 4rem; color: #ccc;"></i>
+        <p class="text-muted mt-3">No puppies listed yet. Add your first puppy!</p>
+    </div>
+    <% } %>
+</div>
+
+<!-- Add Puppy Modal -->
+<div class="modal fade" id="addPuppyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="addPuppyForm" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Puppy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">Gender *</label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Select gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="color" class="form-label">Color</label>
+                                <input type="text" class="form-control" id="color" name="color" placeholder="e.g., Red, Black, Apricot">
+                            </div>
+                            <div class="mb-3">
+                                <label for="dob" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="dob" name="dob">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price</label>
+                                <input type="text" class="form-control" id="price" name="price" placeholder="e.g., $2,500 or Contact for price">
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="available">Available</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="sold">Sold</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="image" class="form-label">Main Photo</label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                <div class="form-text">You can add more photos after creating the puppy</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="display_order" class="form-label">Display Order</label>
+                                <input type="number" class="form-control" id="display_order" name="display_order" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe the puppy's personality, temperament, etc."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                            <label class="form-check-label" for="is_featured">
+                                Featured puppy (shows first in listings)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Puppy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add puppy form handler
+document.getElementById('addPuppyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    // Convert checkbox to boolean
+    formData.set('is_featured', formData.get('is_featured') === 'on');
+    
+    try {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
+        
+        const response = await fetch('/admin/api/puppies', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = `/admin/puppies/${data.puppy.id}/edit`;
+        } else {
+            alert('Error: ' + (data.message || 'Failed to add puppy'));
+        }
+    } catch (error) {
+        alert('Error adding puppy: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// Delete puppy handler
+document.querySelectorAll('.delete-puppy').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        
+        if (!confirm(`Are you sure you want to delete ${name}? This will also delete all associated images.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/admin/api/puppies/${id}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + (result.message || 'Delete failed'));
+            }
+        } catch (error) {
+            alert('Error deleting puppy: ' + error.message);
+        }
+    });
+});
+</script>
