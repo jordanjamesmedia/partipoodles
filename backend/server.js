@@ -77,14 +77,28 @@ async function startServer() {
     // Test database connection
     const dbConnected = await testConnection();
     if (!dbConnected) {
-      console.error('Failed to connect to database. Please check your configuration.');
-      process.exit(1);
+      console.warn('WARNING: Failed to connect to database.');
+      console.warn('The server will start but database operations will fail.');
+      console.warn('Please configure your Neon database credentials in .env file.');
+      console.warn('');
+      console.warn('To set up Neon:');
+      console.warn('1. Create account at https://neon.tech');
+      console.warn('2. Create a new project');
+      console.warn('3. Copy the connection string to .env file');
+      console.warn('4. Run: npm run setup-db');
+      console.warn('');
+    } else {
+      console.log('✓ Database connected successfully');
     }
 
     app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-      console.log(`Admin panel: http://localhost:${PORT}/admin`);
-      console.log(`API endpoints: http://localhost:${PORT}/api`);
+      console.log(`\n🚀 Server is running on http://localhost:${PORT}`);
+      console.log(`📊 Admin panel: http://localhost:${PORT}/admin`);
+      console.log(`🔌 API endpoints: http://localhost:${PORT}/api`);
+      console.log('\nNOTE: This is a development server.');
+      if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('username:password')) {
+        console.log('\n⚠️  Database not configured! See .env.example for setup instructions.');
+      }
     });
   } catch (error) {
     console.error('Failed to start server:', error);
