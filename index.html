@@ -25,8 +25,7 @@
     <link rel="stylesheet" href="css/styles.css?v=2024-12-19b">
     <link rel="canonical" href="https://partipoodlesaustralia.com/">
     
-    <!-- Netlify Identity Widget -->
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <!-- GitHub Authentication for CMS -->
     
     <!-- CMS Loader -->
     <script src="js/cms-loader.js"></script>
@@ -505,16 +504,11 @@
 
         </script>
         
-        <!-- Netlify Identity Widget Authentication -->
+        <!-- Admin Panel Access -->
         <script>
-            if (window.netlifyIdentity) {
-                window.netlifyIdentity.on("init", user => {
-                    if (!user) {
-                        window.netlifyIdentity.on("login", () => {
-                            document.location.href = "/admin/";
-                        });
-                    }
-                });
+            // Admin panel opens directly with GitHub authentication
+            function openAdmin() {
+                window.location.href = '/admin/';
             }
         </script>
 </body>

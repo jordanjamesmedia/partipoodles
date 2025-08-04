@@ -1,5 +1,6 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: jordanjamesmedia/partipoodles
   branch: main # Branch to update (optional; defaults to main)
 
 # Uncomment below to enable drafts

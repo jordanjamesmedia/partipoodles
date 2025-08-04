@@ -140,11 +140,7 @@ function addAdminButton() {
 
 // Open admin panel
 function openAdmin() {
-    if (window.netlifyIdentity) {
-        window.netlifyIdentity.open();
-    } else {
-        window.location.href = '/admin/';
-    }
+    window.location.href = '/admin/';
 }
 
 // Initialize when DOM is loaded
