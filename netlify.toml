@@ -5,6 +5,14 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Enable Netlify Identity for CMS authentication
+[identity]
+  settings = { external_providers = ["github", "google"] }
+
+# Enable Netlify CMS/Decap CMS
+[cms]
+  branch = "main"
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -38,6 +46,12 @@
   for = "*.webp"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
+
+# Admin route for CMS
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin/index.html"
+  status = 200
 
 # 404 page
 [[redirects]]
