@@ -1,24 +1,25 @@
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { ArrowLeft, Calendar, User, Heart, MapPin, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import PuppyGallery from "@/components/PuppyGallery";
-import type { Puppy } from "@shared/schema";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 export default function PuppyDetails() {
   const params = useParams();
-  const puppyId = params.id;
+  const puppyId = params.id as Id<"puppies"> | undefined;
 
-  const { data: puppy, isLoading, error } = useQuery<Puppy>({
-    queryKey: ['/api/puppies', puppyId],
-    enabled: !!puppyId,
-  });
-
-  const { data: allPuppies } = useQuery<Puppy[]>({
-    queryKey: ['/api/puppies'],
-  });
+  // Get all puppies and find the one we want
+  const allPuppiesData = useQuery(api.puppies.list);
+  const allPuppies = allPuppiesData ?? [];
+  
+  // Find the specific puppy
+  const puppy = puppyId ? allPuppies.find(p => p._id === puppyId) : undefined;
+  const isLoading = allPuppiesData === undefined;
+  const error = !puppy && !isLoading && puppyId;
 
   if (isLoading) {
     return (
@@ -49,9 +50,9 @@ export default function PuppyDetails() {
   }
 
   // Find litter mates
-  const litterMates = allPuppies?.filter(p => 
-    p.litterId === puppy.litterId && p.id !== puppy.id
-  ) || [];
+  const litterMates = allPuppies.filter(p => 
+    p.litter_id === puppy.litter_id && p._id !== puppy._id
+  );
 
   const formatPrice = (priceMin: number | null, priceMax: number | null) => {
     if (!priceMin && !priceMax) return "Contact for Price";
@@ -216,22 +217,22 @@ export default function PuppyDetails() {
                       {puppy.color} {puppy.gender === 'male' ? 'Boy' : 'Girl'}
                     </p>
                   </div>
-                  <Badge className={getStatusBadgeClass(puppy.status)}>
-                    {getStatusText(puppy.status)}
+                  <Badge className={getStatusBadgeClass(puppy.status || 'available')}>
+                    {getStatusText(puppy.status || 'available')}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+               <CardContent className="space-y-4">
                 <div className="text-2xl font-bold text-gray-800">
-                  {formatPrice(puppy.priceMin, puppy.priceMax)}
+                  {formatPrice(puppy.price_min ?? null, puppy.price_max ?? null)}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center text-gray-600">
                     <span className="mr-2">🎂</span>
                     <span>
-                      {puppy.litterDateOfBirth ? (
-                        new Date(puppy.litterDateOfBirth).toLocaleDateString('en-AU', {
+                      {puppy.litter_date_of_birth ? (
+                        new Date(puppy.litter_date_of_birth).toLocaleDateString('en-AU', {
                           day: 'numeric',
                           month: 'long',
                           year: 'numeric'
@@ -257,22 +258,22 @@ export default function PuppyDetails() {
             </Card>
 
             {/* Parent Information */}
-            {(puppy.parentSire || puppy.parentDam) && (
+            {(puppy.parent_sire || puppy.parent_dam) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Parents</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {puppy.parentSire && (
+                  {puppy.parent_sire && (
                     <div>
                       <span className="font-medium text-gray-700">Sire: </span>
-                      <span className="text-gray-600">{puppy.parentSire}</span>
+                      <span className="text-gray-600">{puppy.parent_sire}</span>
                     </div>
                   )}
-                  {puppy.parentDam && (
+                  {puppy.parent_dam && (
                     <div>
                       <span className="font-medium text-gray-700">Dam: </span>
-                      <span className="text-gray-600">{puppy.parentDam}</span>
+                      <span className="text-gray-600">{puppy.parent_dam}</span>
                     </div>
                   )}
                 </CardContent>
@@ -309,9 +310,9 @@ export default function PuppyDetails() {
                   ? convertToPublicUrl(litterMate.photos[0])
                   : null;
 
-                return (
-                  <Card key={litterMate.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <Link href={`/puppy/${litterMate.id}`}>
+                  return (
+                  <Card key={litterMate._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <Link href={`/puppy/${litterMate._id}`}>
                       <div className="cursor-pointer">
                         {matePhoto ? (
                           <img 
@@ -333,11 +334,11 @@ export default function PuppyDetails() {
                           <h3 className="font-semibold text-gray-800 mb-1">{litterMate.name}</h3>
                           <p className="text-sm text-gray-600">{litterMate.color} {litterMate.gender === 'male' ? 'Boy' : 'Girl'}</p>
                           <div className="flex justify-between items-center mt-2">
-                            <Badge className={getStatusBadgeClass(litterMate.status)} variant="secondary">
-                              {getStatusText(litterMate.status)}
+                            <Badge className={getStatusBadgeClass(litterMate.status || 'available')} variant="secondary">
+                              {getStatusText(litterMate.status || 'available')}
                             </Badge>
                             <span className="text-sm font-medium text-gray-800">
-                              {formatPrice(litterMate.priceMin, litterMate.priceMax)}
+                              {formatPrice(litterMate.price_min ?? null, litterMate.price_max ?? null)}
                             </span>
                           </div>
                         </div>

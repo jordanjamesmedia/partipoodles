@@ -1,15 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import ParentDogCard from "@/components/ParentDogCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Award, Shield } from "lucide-react";
-import type { ParentDog } from "@shared/schema";
 
 export default function Parents() {
-  const { data: parentDogs = [], isLoading, error } = useQuery<ParentDog[]>({
-    queryKey: ["/api/parent-dogs"],
-  });
+  const parentDogsData = useQuery(api.parentDogs.list);
+  
+  const parentDogs = parentDogsData ?? [];
+  const isLoading = parentDogsData === undefined;
+  const error = null;
 
   const activeDams = parentDogs.filter(dog => dog.gender === 'female' && dog.status === 'active');
   const activeSires = parentDogs.filter(dog => dog.gender === 'male' && dog.status === 'active');
@@ -122,7 +124,7 @@ export default function Parents() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="dams-grid">
                     {activeDams.map((dam) => (
-                      <ParentDogCard key={dam.id} parentDog={dam} />
+                      <ParentDogCard key={dam._id} parentDog={dam} />
                     ))}
                   </div>
                 </div>
@@ -141,7 +143,7 @@ export default function Parents() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid="sires-grid">
                     {activeSires.map((sire) => (
-                      <ParentDogCard key={sire.id} parentDog={sire} />
+                      <ParentDogCard key={sire._id} parentDog={sire} />
                     ))}
                   </div>
                 </div>

@@ -1,43 +1,38 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PuppyCard from "@/components/PuppyCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette } from "lucide-react";
-import type { Puppy, Litter } from "@shared/schema";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 import familyPoodleImage from "@assets/1_1754364343232.png";
 
 export default function Home() {
-  const { data: puppies = [], isLoading } = useQuery<Puppy[]>({
-    queryKey: ["/api/puppies"],
-  });
-
-  const { data: litters = [] } = useQuery({
-    queryKey: ['/api/litters'],
-    queryFn: async () => {
-      const response = await fetch('/api/litters');
-      return response.json();
-    },
-  });
+  const puppiesData = useQuery(api.puppies.list);
+  const littersData = useQuery(api.litters.list);
+  
+  const puppies = puppiesData ?? [];
+  const litters = littersData ?? [];
+  const isLoading = puppiesData === undefined;
 
   const featuredPuppies = puppies.slice(0, 6);
 
   // Group puppies by litter
   const puppiesByLitter = featuredPuppies.reduce((acc, puppy) => {
-    const litterId = puppy.litterId || 'no-litter';
+    const litterId = puppy.litter_id || 'no-litter';
     if (!acc[litterId]) {
       acc[litterId] = [];
     }
     acc[litterId].push(puppy);
     return acc;
-  }, {} as Record<string, Puppy[]>);
+  }, {} as Record<string, typeof puppies>);
 
   // Get litter info for each group
   const getLitterInfo = (litterId: string) => {
     if (litterId === 'no-litter') return null;
-    return litters.find((litter: Litter) => litter.id === litterId);
+    return litters.find((litter) => litter._id === litterId);
   };
 
   return (
@@ -126,7 +121,7 @@ export default function Home() {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
                     {litterPuppies.map((puppy) => (
-                      <PuppyCard key={puppy.id} puppy={puppy} />
+                      <PuppyCard key={puppy._id} puppy={puppy} />
                     ))}
                   </div>
                 </div>

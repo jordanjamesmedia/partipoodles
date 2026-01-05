@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,11 +53,20 @@ export default function ContactForm() {
     }
   });
 
-  const submitMutation = useMutation({
-    mutationFn: async (data: ContactFormData) => {
-      await apiRequest("POST", "/api/inquiries", data);
-    },
-    onSuccess: () => {
+  const createInquiry = useMutation(api.inquiries.create);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const onSubmit = async (data: ContactFormData) => {
+    setIsSubmitting(true);
+    try {
+      await createInquiry({
+        customer_name: data.customerName,
+        email: data.email,
+        phone: data.phone || undefined,
+        message: data.message,
+        puppy_interest: data.puppyInterest || undefined,
+      });
+      
       toast({
         title: "Message Sent!",
         description: "Thank you for your inquiry. We'll get back to you within 24 hours.",
@@ -68,18 +77,15 @@ export default function ContactForm() {
       const url = new URL(window.location.href);
       url.searchParams.delete('puppy');
       window.history.replaceState({}, '', url.toString());
-    },
-    onError: () => {
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to send message. Please try again or contact us directly.",
         variant: "destructive",
       });
-    },
-  });
-
-  const onSubmit = (data: ContactFormData) => {
-    submitMutation.mutate(data);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -208,10 +214,10 @@ export default function ContactForm() {
           <Button 
             type="submit" 
             className="w-full btn-primary"
-            disabled={submitMutation.isPending}
+            disabled={isSubmitting}
             data-testid="button-send-message"
           >
-            {submitMutation.isPending ? (
+            {isSubmitting ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Sending...

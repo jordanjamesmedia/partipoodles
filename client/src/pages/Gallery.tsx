@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useState, useRef } from "react";
 import { Eye, X, Upload, Camera } from "lucide-react";
-import type { GalleryPhoto } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import OrientationFixedImage from "@/components/OrientationFixedImage";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import type { UploadResult } from "@uppy/core";
+
+// Photo type for Convex
+interface GalleryPhotoData {
+  _id: string;
+  url: string;
+  caption?: string | null;
+  filename: string;
+  is_public?: boolean;
+}
 
 export default function Gallery() {
   const uploadFormRef = useRef<HTMLElement>(null);
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhotoData | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploaderName, setUploaderName] = useState("");
   const [uploaderEmail, setUploaderEmail] = useState("");
@@ -47,13 +55,12 @@ export default function Gallery() {
     }, 100);
   };
   
-  const { data: photos = [], isLoading } = useQuery<GalleryPhoto[]>({
-    queryKey: ["/api/gallery"],
-  });
-
-  const { data: parentDogs = [] } = useQuery<any[]>({
-    queryKey: ["/api/parent-dogs"],
-  });
+  const photosData = useQuery(api.galleryPhotos.listPublic);
+  const parentDogsData = useQuery(api.parentDogs.list);
+  
+  const photos = photosData ?? [];
+  const parentDogs = parentDogsData ?? [];
+  const isLoading = photosData === undefined;
 
   // Convert storage URL to serving endpoint with compression support
   const convertToPublicUrl = (storageUrl: string, options?: {
@@ -381,8 +388,8 @@ export default function Gallery() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">None selected</SelectItem>
-                          {(parentDogs as any[]).filter((dog: any) => dog.gender === 'female').map((dog: any) => (
-                            <SelectItem key={dog.id} value={dog.id}>
+                          {parentDogs.filter((dog) => dog.gender === 'female').map((dog) => (
+                            <SelectItem key={dog._id} value={dog._id}>
                               {dog.name} ({dog.color})
                             </SelectItem>
                           ))}
@@ -399,8 +406,8 @@ export default function Gallery() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">None selected</SelectItem>
-                          {(parentDogs as any[]).filter((dog: any) => dog.gender === 'male').map((dog: any) => (
-                            <SelectItem key={dog.id} value={dog.id}>
+                          {parentDogs.filter((dog) => dog.gender === 'male').map((dog) => (
+                            <SelectItem key={dog._id} value={dog._id}>
                               {dog.name} ({dog.color})
                             </SelectItem>
                           ))}
@@ -534,10 +541,10 @@ export default function Gallery() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {photos.map((photo) => (
                 <div
-                  key={photo.id}
+                  key={photo._id}
                   className="group relative aspect-square rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
                   onClick={() => setSelectedPhoto(photo)}
-                  data-testid={`gallery-photo-${photo.id}`}
+                  data-testid={`gallery-photo-${photo._id}`}
                 >
                   <OrientationFixedImage
                     src={convertToPublicUrl(photo.url, { width: 400, quality: 65, compress: true })}

@@ -1,23 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PuppyCard from "@/components/PuppyCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Puppy, Litter } from "@shared/schema";
 
 export default function Puppies() {
-  const { data: puppies = [], isLoading, error } = useQuery<Puppy[]>({
-    queryKey: ["/api/puppies"],
-  });
-
-  // Fetch litters for birth date display
-  const { data: litters = [] } = useQuery({
-    queryKey: ['/api/litters'],
-    queryFn: async () => {
-      const response = await fetch('/api/litters');
-      return response.json();
-    },
-  });
+  const puppiesData = useQuery(api.puppies.list);
+  const littersData = useQuery(api.litters.list);
+  
+  const puppies = puppiesData ?? [];
+  const litters = littersData ?? [];
+  const isLoading = puppiesData === undefined;
+  const error = null; // Convex handles errors differently
 
   return (
     <div className="min-h-screen bg-neutral-light">
@@ -77,8 +72,8 @@ export default function Puppies() {
               {/* Group puppies by litter and display each group with its parent info */}
               {(() => {
                 // Group puppies by litter ID
-                const puppiesByLitter = puppies.reduce((acc: Record<string, Puppy[]>, puppy) => {
-                  const litterId = puppy.litterId || 'unknown';
+                const puppiesByLitter = puppies.reduce((acc: Record<string, typeof puppies>, puppy) => {
+                  const litterId = puppy.litter_id || 'unknown';
                   if (!acc[litterId]) {
                     acc[litterId] = [];
                   }
@@ -88,41 +83,22 @@ export default function Puppies() {
 
                 return Object.entries(puppiesByLitter).map(([litterId, litterPuppies]) => {
                   // Find the corresponding litter information
-                  const currentLitter = litters.find((l: any) => l.id === litterId);
+                  const currentLitter = litters.find((l) => l._id === litterId);
                   
                   return (
                     <div key={litterId}>
                       {/* Litter Header with Parent Information */}
                       <div className="text-center mb-12">
                         <h3 className="text-2xl md:text-3xl font-serif font-bold text-gray-800 mb-4">
-                          {currentLitter?.name || litterPuppies[0]?.litterName || 'Available Litter'}
+                          {currentLitter?.name || litterPuppies[0]?.litter_name || 'Available Litter'}
                         </h3>
-                        
-                        {currentLitter && (currentLitter.damName || currentLitter.sireName) && (
-                          <div className="mb-6">
-                            <p className="text-xl text-gray-600">
-                              From our champion parents{' '}
-                              {currentLitter.damName && (
-                                <span className="font-semibold text-primary">
-                                  {currentLitter.damName} ({currentLitter.damColor})
-                                </span>
-                              )}
-                              {currentLitter.damName && currentLitter.sireName && ' and '}
-                              {currentLitter.sireName && (
-                                <span className="font-semibold text-primary">
-                                  {currentLitter.sireName} ({currentLitter.sireColor})
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        )}
                       </div>
                       
                       {/* Puppies Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-testid={`puppies-grid-${litterId}`}>
                         {litterPuppies.map((puppy) => (
                           <PuppyCard 
-                            key={puppy.id} 
+                            key={puppy._id} 
                             puppy={puppy} 
                             showInquireButton 
                           />

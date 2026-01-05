@@ -4,21 +4,49 @@ import { Calendar, User, ZoomIn, X, Eye, Heart } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import PuppyGallery from "@/components/PuppyGallery";
-import type { Puppy } from "@shared/schema";
+
+// Support both Convex (snake_case) and legacy (camelCase) field names
+interface PuppyData {
+  _id?: string;
+  id?: string;
+  name: string;
+  color?: string | null;
+  gender?: string | null;
+  description?: string | null;
+  status?: string | null;
+  photos?: string[] | null;
+  // Convex fields (snake_case)
+  litter_date_of_birth?: string | null;
+  price_min?: number | null;
+  price_max?: number | null;
+  // Legacy fields (camelCase)
+  litterDateOfBirth?: string | Date | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+}
 
 interface PuppyCardProps {
-  puppy: Puppy;
+  puppy: PuppyData;
   showInquireButton?: boolean;
 }
 
 export default function PuppyCard({ puppy, showInquireButton = false }: PuppyCardProps) {
-  const formatPrice = (priceMin: number | null, priceMax: number | null) => {
-    if (!priceMin && !priceMax) return "Contact for Price";
-    if (priceMin && priceMax && priceMin !== priceMax) {
-      return `$${(priceMin / 100).toLocaleString('en-AU')} - $${(priceMax / 100).toLocaleString('en-AU')} AUD`;
+  // Normalize field names (support both snake_case and camelCase)
+  const puppyId = puppy._id || puppy.id || '';
+  const dateOfBirth = puppy.litter_date_of_birth || puppy.litterDateOfBirth;
+  const priceMin = puppy.price_min ?? puppy.priceMin ?? null;
+  const priceMax = puppy.price_max ?? puppy.priceMax ?? null;
+  const status = puppy.status || 'available';
+  const color = puppy.color || '';
+  const gender = puppy.gender || '';
+
+  const formatPrice = (min: number | null, max: number | null) => {
+    if (!min && !max) return "Contact for Price";
+    if (min && max && min !== max) {
+      return `$${(min / 100).toLocaleString('en-AU')} - $${(max / 100).toLocaleString('en-AU')} AUD`;
     }
     // If min and max are the same, show as single price
-    const price = priceMin || priceMax;
+    const price = min || max;
     return `$${(price! / 100).toLocaleString('en-AU')} AUD`;
   };
 
@@ -101,22 +129,22 @@ export default function PuppyCard({ puppy, showInquireButton = false }: PuppyCar
     : null;
 
   return (
-    <div className="puppy-card bg-white shadow-lg rounded-xl overflow-hidden" data-testid={`puppy-card-${puppy.id}`}>
+    <div className="puppy-card bg-white shadow-lg rounded-xl overflow-hidden" data-testid={`puppy-card-${puppyId}`}>
       {/* Top - Large Photo with Gallery Lightbox */}
       {mainPhoto && (
         <div className="relative group h-80 md:h-96">
           <PuppyGallery
             photos={puppy.photos || []}
             puppyName={puppy.name}
-            puppyColor={puppy.color}
-            puppyGender={puppy.gender}
+            puppyColor={color}
+            puppyGender={gender}
             trigger={
               <div className="relative cursor-pointer h-full w-full">
                 <img 
                   src={mainPhoto}
-                  alt={`${puppy.name} - ${puppy.color} ${puppy.gender}`}
+                  alt={`${puppy.name} - ${color} ${gender}`}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  data-testid={`puppy-image-${puppy.id}`}
+                  data-testid={`puppy-image-${puppyId}`}
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
@@ -131,8 +159,8 @@ export default function PuppyCard({ puppy, showInquireButton = false }: PuppyCar
                   </div>
                 </div>
                 <div className="absolute top-4 left-4">
-                  <span className={getStatusBadgeClass(puppy.status)} data-testid={`puppy-status-${puppy.id}`}>
-                    {getStatusText(puppy.status)}
+                  <span className={getStatusBadgeClass(status)} data-testid={`puppy-status-${puppyId}`}>
+                    {getStatusText(status)}
                   </span>
                 </div>
                 {puppy.photos && puppy.photos.length > 1 && (
@@ -153,15 +181,15 @@ export default function PuppyCard({ puppy, showInquireButton = false }: PuppyCar
       
       {/* Bottom - Information */}
       <div className="p-6">
-        <h3 className="text-2xl font-serif font-bold text-gray-800 mb-2" data-testid={`puppy-name-${puppy.id}`}>
-          {puppy.name} - {puppy.color} {puppy.gender === 'male' ? 'Boy' : 'Girl'}
+        <h3 className="text-2xl font-serif font-bold text-gray-800 mb-2" data-testid={`puppy-name-${puppyId}`}>
+          {puppy.name} - {color} {gender === 'male' ? 'Boy' : 'Girl'}
         </h3>
         
         <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-gray-600 mb-4 gap-2">
-          <span className="flex items-center" data-testid={`puppy-dob-${puppy.id}`}>
+          <span className="flex items-center" data-testid={`puppy-dob-${puppyId}`}>
             <span className="mr-1">🎂</span>
-            {puppy.litterDateOfBirth ? (
-              new Date(puppy.litterDateOfBirth).toLocaleDateString('en-AU', {
+            {dateOfBirth ? (
+              new Date(dateOfBirth).toLocaleDateString('en-AU', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric'
@@ -170,34 +198,34 @@ export default function PuppyCard({ puppy, showInquireButton = false }: PuppyCar
               'Birth date unknown'
             )}
           </span>
-          <span className="flex items-center" data-testid={`puppy-gender-${puppy.id}`}>
+          <span className="flex items-center" data-testid={`puppy-gender-${puppyId}`}>
             <User className="mr-1 h-4 w-4" />
-            {puppy.gender === 'male' ? 'Male' : 'Female'}
+            {gender === 'male' ? 'Male' : 'Female'}
           </span>
         </div>
         
         {puppy.description && (
-          <p className="text-gray-600 mb-4 line-clamp-3" data-testid={`puppy-description-${puppy.id}`}>
+          <p className="text-gray-600 mb-4 line-clamp-3" data-testid={`puppy-description-${puppyId}`}>
             {puppy.description}
           </p>
         )}
         
         <div className="mb-4">
-          <span className="text-lg font-semibold text-primary" data-testid={`puppy-price-${puppy.id}`}>
-            {formatPrice(puppy.priceMin, puppy.priceMax)}
+          <span className="text-lg font-semibold text-primary" data-testid={`puppy-price-${puppyId}`}>
+            {formatPrice(priceMin, priceMax)}
           </span>
         </div>
         
         <div className="flex gap-2">
-          <Link href={`/puppy/${puppy.id}`} className="flex-1">
-            <Button variant="outline" className="w-full" data-testid={`button-view-details-${puppy.id}`}>
+          <Link href={`/puppy/${puppyId}`} className="flex-1">
+            <Button variant="outline" className="w-full" data-testid={`button-view-details-${puppyId}`}>
               <Eye className="mr-2 h-4 w-4" />
               View Details
             </Button>
           </Link>
           {showInquireButton && (
             <Link href={`/contact?puppy=${encodeURIComponent(puppy.name.toLowerCase())}`} className="flex-1">
-              <Button className="w-full btn-primary" data-testid={`button-inquire-${puppy.id}`}>
+              <Button className="w-full btn-primary" data-testid={`button-inquire-${puppyId}`}>
                 <Heart className="mr-2 h-4 w-4" />
                 Enquire
               </Button>

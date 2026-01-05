@@ -1,11 +1,39 @@
 import { Calendar, Award, Heart } from "lucide-react";
-import type { ParentDog } from "@shared/schema";
+
+// Support both Convex (snake_case) and legacy (camelCase) field names
+interface ParentDogData {
+  _id?: string;
+  id?: string;
+  name: string;
+  registered_name?: string | null;
+  registeredName?: string | null;
+  color?: string | null;
+  gender: string;
+  date_of_birth?: string | null;
+  dateOfBirth?: string | Date | null;
+  description?: string | null;
+  photos?: string[] | null;
+  status: string;
+  health_testing?: string | null;
+  healthTesting?: string | null;
+  achievements?: string | null;
+  weight?: number | null;
+  height?: number | null;
+}
 
 interface ParentDogCardProps {
-  parentDog: ParentDog;
+  parentDog: ParentDogData;
 }
 
 export default function ParentDogCard({ parentDog }: ParentDogCardProps) {
+  // Normalize field names (support both snake_case and camelCase)
+  const dogId = parentDog._id || parentDog.id || '';
+  const registeredName = parentDog.registered_name || parentDog.registeredName;
+  const dateOfBirth = parentDog.date_of_birth || parentDog.dateOfBirth;
+  const healthTesting = parentDog.health_testing || parentDog.healthTesting;
+  const color = parentDog.color || '';
+  const status = parentDog.status || 'active';
+
   // Convert storage URL to serving endpoint with compression support
   const convertToPublicUrl = (storageUrl: string, options?: {
     quality?: number;
@@ -89,18 +117,18 @@ export default function ParentDogCard({ parentDog }: ParentDogCardProps) {
   };
 
   return (
-    <div className="parent-dog-card border border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow bg-white" data-testid={`parent-dog-card-${parentDog.id}`}>
+    <div className="parent-dog-card border border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow bg-white" data-testid={`parent-dog-card-${dogId}`}>
       {mainPhoto && (
         <div className="relative">
           <img 
             src={mainPhoto}
-            alt={`${parentDog.name} - ${parentDog.color} ${parentDog.gender}`}
+            alt={`${parentDog.name} - ${color} ${parentDog.gender}`}
             className="w-full h-64 object-cover"
-            data-testid={`parent-dog-image-${parentDog.id}`}
+            data-testid={`parent-dog-image-${dogId}`}
           />
           <div className="absolute top-4 left-4">
-            <span className={getStatusBadgeClass(parentDog.status)} data-testid={`parent-dog-status-${parentDog.id}`}>
-              {getStatusText(parentDog.status)}
+            <span className={getStatusBadgeClass(status)} data-testid={`parent-dog-status-${dogId}`}>
+              {getStatusText(status)}
             </span>
           </div>
         </div>
@@ -109,42 +137,44 @@ export default function ParentDogCard({ parentDog }: ParentDogCardProps) {
       <div className="p-6">
         {!mainPhoto && (
           <div className="mb-4">
-            <span className={getStatusBadgeClass(parentDog.status)} data-testid={`parent-dog-status-${parentDog.id}`}>
-              {getStatusText(parentDog.status)}
+            <span className={getStatusBadgeClass(status)} data-testid={`parent-dog-status-${dogId}`}>
+              {getStatusText(status)}
             </span>
           </div>
         )}
         <div className="mb-2">
-          <h3 className="text-2xl font-serif font-bold text-gray-800" data-testid={`parent-dog-name-${parentDog.id}`}>
+          <h3 className="text-2xl font-serif font-bold text-gray-800" data-testid={`parent-dog-name-${dogId}`}>
             {parentDog.name}
           </h3>
-          {parentDog.registeredName && (
-            <p className="text-sm text-gray-600 italic" data-testid={`parent-dog-registered-name-${parentDog.id}`}>
-              Registered: {parentDog.registeredName}
+          {registeredName && (
+            <p className="text-sm text-gray-600 italic" data-testid={`parent-dog-registered-name-${dogId}`}>
+              Registered: {registeredName}
             </p>
           )}
         </div>
         
-        <div className="text-lg font-medium text-primary mb-4" data-testid={`parent-dog-color-${parentDog.id}`}>
-          {parentDog.color} {parentDog.gender === 'male' ? 'Male' : 'Female'}
+        <div className="text-lg font-medium text-primary mb-4" data-testid={`parent-dog-color-${dogId}`}>
+          {color} {parentDog.gender === 'male' ? 'Male' : 'Female'}
         </div>
         
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
-          <div className="flex items-center" data-testid={`parent-dog-dob-${parentDog.id}`}>
-            <Calendar className="mr-1 h-4 w-4" />
-            Born {new Date(parentDog.dateOfBirth).toLocaleDateString('en-AU', {
-              month: 'short',
-              year: 'numeric'
-            })}
-          </div>
-          <div className="flex items-center" data-testid={`parent-dog-weight-${parentDog.id}`}>
+          {dateOfBirth && (
+            <div className="flex items-center" data-testid={`parent-dog-dob-${dogId}`}>
+              <Calendar className="mr-1 h-4 w-4" />
+              Born {new Date(dateOfBirth).toLocaleDateString('en-AU', {
+                month: 'short',
+                year: 'numeric'
+              })}
+            </div>
+          )}
+          <div className="flex items-center" data-testid={`parent-dog-weight-${dogId}`}>
             <Heart className="mr-1 h-4 w-4" />
-            {formatWeight(parentDog.weight)}
+            {formatWeight(parentDog.weight ?? null)}
           </div>
         </div>
         
         {parentDog.description && (
-          <p className="text-gray-600 mb-4 line-clamp-3" data-testid={`parent-dog-description-${parentDog.id}`}>
+          <p className="text-gray-600 mb-4 line-clamp-3" data-testid={`parent-dog-description-${dogId}`}>
             {parentDog.description}
           </p>
         )}
@@ -152,17 +182,17 @@ export default function ParentDogCard({ parentDog }: ParentDogCardProps) {
         {parentDog.achievements && (
           <div className="flex items-start mb-4">
             <Award className="mr-2 h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-gray-700 line-clamp-2" data-testid={`parent-dog-achievements-${parentDog.id}`}>
+            <p className="text-sm text-gray-700 line-clamp-2" data-testid={`parent-dog-achievements-${dogId}`}>
               {parentDog.achievements}
             </p>
           </div>
         )}
         
-        {parentDog.healthTesting && (
+        {healthTesting && (
           <div className="bg-green-50 p-3 rounded-lg">
             <h4 className="font-medium text-green-800 mb-1">Health Testing</h4>
-            <p className="text-sm text-green-700" data-testid={`parent-dog-health-${parentDog.id}`}>
-              {parentDog.healthTesting}
+            <p className="text-sm text-green-700" data-testid={`parent-dog-health-${dogId}`}>
+              {healthTesting}
             </p>
           </div>
         )}
