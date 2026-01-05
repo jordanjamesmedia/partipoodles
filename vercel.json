@@ -2,6 +2,8 @@
   "buildCommand": "echo 'Static site - no build required'",
   "outputDirectory": ".",
   "framework": null,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
@@ -41,12 +43,6 @@
           "value": "public, max-age=31536000"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }

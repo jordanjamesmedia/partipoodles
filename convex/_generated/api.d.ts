@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as adminUsers from "../adminUsers.js";
+import type * as customers from "../customers.js";
 import type * as galleryPhotos from "../galleryPhotos.js";
 import type * as inquiries from "../inquiries.js";
 import type * as litters from "../litters.js";
@@ -21,6 +23,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminUsers: typeof adminUsers;
+  customers: typeof customers;
   galleryPhotos: typeof galleryPhotos;
   inquiries: typeof inquiries;
   litters: typeof litters;

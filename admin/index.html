@@ -1,12 +1,213 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parti Poodles Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Parti Poodles Australia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #2D5A27 0%, #1a3517 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo h1 {
+            color: #2D5A27;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .logo p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #2D5A27;
+        }
+        
+        button {
+            width: 100%;
+            padding: 0.875rem;
+            background: #2D5A27;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1a3517;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        
+        .back-link a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .back-link a:hover {
+            color: #2D5A27;
+        }
+    </style>
 </head>
 <body>
-  <!-- Include the script that builds the page and powers Decap CMS -->
-  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+    <div class="login-container">
+        <div class="logo">
+            <h1>Parti Poodles Australia</h1>
+            <p>Admin Dashboard</p>
+        </div>
+        
+        <div class="error" id="error-message"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <button type="submit" id="login-btn">Sign In</button>
+        </form>
+        
+        <div class="back-link">
+            <a href="/">← Back to Website</a>
+        </div>
+    </div>
+    
+    <script>
+        const CONVEX_URL = 'https://dapper-warthog-727.convex.cloud';
+        
+        // Check if already logged in
+        if (sessionStorage.getItem('adminUser')) {
+            window.location.href = '/admin/dashboard.html';
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorEl = document.getElementById('error-message');
+            const btn = document.getElementById('login-btn');
+            
+            errorEl.classList.remove('show');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            
+            try {
+                // Query Convex for admin user
+                const response = await fetch(`${CONVEX_URL}/api/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: 'adminUsers:getByUsername',
+                        args: { username },
+                        format: 'json'
+                    })
+                });
+                
+                const data = await response.json();
+                const user = data.value;
+                
+                if (user && user.password === password) {
+                    // Store session
+                    sessionStorage.setItem('adminUser', JSON.stringify({
+                        id: user._id,
+                        username: user.username,
+                        role: user.role,
+                        firstName: user.first_name,
+                        lastName: user.last_name
+                    }));
+                    
+                    window.location.href = '/admin/dashboard.html';
+                } else {
+                    errorEl.textContent = 'Invalid username or password';
+                    errorEl.classList.add('show');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.classList.add('show');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        });
+    </script>
 </body>
 </html>
