@@ -68,3 +68,11 @@ export const update = mutation({
     });
   },
 });
+
+// Delete customer
+export const remove = mutation({
+  args: { id: v.id("customers") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
