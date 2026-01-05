@@ -54,3 +54,4 @@ temp/
 # Deployment files
 .netlify/
 windsurf_deployment.yaml
+.vercel
