@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 
 export function useAuth() {
@@ -8,16 +7,10 @@ export function useAuth() {
   // Check localStorage for admin login state on mount
   useEffect(() => {
     const adminLoggedIn = localStorage.getItem("adminLoggedIn");
-    setIsLocallyAuthenticated(adminLoggedIn === "true");
+    const adminUser = localStorage.getItem("adminUser");
+    setIsLocallyAuthenticated(adminLoggedIn === "true" && !!adminUser);
     setIsLoading(false);
   }, []);
-
-  // Check admin authentication with backend
-  const { data: adminAuth, isLoading: adminLoading } = useQuery({
-    queryKey: ["/api/admin/auth"],
-    retry: false,
-    enabled: !isLocallyAuthenticated, // Only check backend if not locally authenticated
-  });
 
   const login = () => {
     localStorage.setItem("adminLoggedIn", "true");
@@ -26,13 +19,27 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("adminUser");
     setIsLocallyAuthenticated(false);
   };
 
+  // Get user from localStorage
+  const getUser = () => {
+    const adminUser = localStorage.getItem("adminUser");
+    if (adminUser) {
+      try {
+        return JSON.parse(adminUser);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  };
+
   return {
-    user: isLocallyAuthenticated ? { username: "admin", role: "admin" } : (adminAuth as any)?.user,
-    isLoading: isLoading || adminLoading,
-    isAuthenticated: isLocallyAuthenticated || (adminAuth as any)?.authenticated,
+    user: getUser(),
+    isLoading,
+    isAuthenticated: isLocallyAuthenticated,
     login,
     logout,
   };
