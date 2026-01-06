@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
 import { Eye, EyeOff, ShieldQuestion } from "lucide-react";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 
@@ -21,21 +22,37 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const loginMutation = useMutation(api.adminUsers.login);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await apiRequest("POST", "/api/admin/login", formData);
-      login(); // Set local authentication state
-      toast({
-        title: "Success",
-        description: "Successfully logged in to Puppy Portal",
+      const result = await loginMutation({
+        username: formData.username,
+        password: formData.password,
       });
-      setLocation("/admin");
+
+      if (result.success && result.user) {
+        // Store admin user info in localStorage
+        localStorage.setItem("adminUser", JSON.stringify(result.user));
+        login(); // Set local authentication state
+        toast({
+          title: "Success",
+          description: "Successfully logged in to Puppy Portal",
+        });
+        setLocation("/admin");
+      } else {
+        toast({
+          title: "Login Failed",
+          description: result.message || "Invalid username or password",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
-        title: "Login Failed", 
+        title: "Login Failed",
         description: "Invalid username or password",
         variant: "destructive",
       });
