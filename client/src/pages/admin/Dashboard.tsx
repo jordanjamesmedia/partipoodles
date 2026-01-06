@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Mail, Users, Images } from "lucide-react";
 
 export default function Dashboard() {
+  console.log("=== Dashboard component rendering ===");
+
   // Use try-catch pattern for Convex queries to handle connection issues
   const puppies = useQuery(api.puppies.list);
   const inquiries = useQuery(api.inquiries.list);
