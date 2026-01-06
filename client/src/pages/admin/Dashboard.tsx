@@ -1,27 +1,36 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Mail, Users, Images } from "lucide-react";
-import type { Inquiry } from "@shared/schema";
-
-interface Statistics {
-  availablePuppies: number;
-  pendingInquiries: number;
-  totalCustomers: number;
-  galleryPhotos: number;
-}
 
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading } = useQuery<Statistics>({
-    queryKey: ["/api/admin/statistics"],
+  console.log("=== Dashboard component rendering (v2) ===");
+
+  // Use try-catch pattern for Convex queries to handle connection issues
+  const puppies = useQuery(api.puppies.list);
+  const inquiries = useQuery(api.inquiries.list);
+  const customers = useQuery(api.customers.list);
+  const galleryPhotos = useQuery(api.galleryPhotos.list);
+
+  // Debug logging
+  console.log("Dashboard data:", {
+    puppies: puppies === undefined ? "loading" : puppies?.length ?? 0,
+    inquiries: inquiries === undefined ? "loading" : inquiries?.length ?? 0,
+    customers: customers === undefined ? "loading" : customers?.length ?? 0,
+    galleryPhotos: galleryPhotos === undefined ? "loading" : galleryPhotos?.length ?? 0,
   });
 
-  const { data: recentInquiries = [], isLoading: inquiriesLoading } = useQuery<Inquiry[]>({
-    queryKey: ["/api/admin/inquiries"],
-  });
+  const statsLoading = puppies === undefined || inquiries === undefined || customers === undefined || galleryPhotos === undefined;
+  const inquiriesLoading = inquiries === undefined;
 
-  const recentInquiriesSlice = recentInquiries.slice(0, 5);
+  const availablePuppies = puppies?.filter(p => p.status === "available").length || 0;
+  const pendingInquiries = inquiries?.filter(i => i.status === "new").length || 0;
+  const totalCustomers = customers?.length || 0;
+  const totalGalleryPhotos = galleryPhotos?.length || 0;
+
+  const recentInquiriesSlice = (inquiries || []).slice(0, 5);
 
   return (
     <AdminLayout>
@@ -38,7 +47,7 @@ export default function Dashboard() {
                       <Skeleton className="h-8 w-16" />
                     ) : (
                       <p className="text-3xl font-bold text-primary" data-testid="text-available-puppies">
-                        {stats?.availablePuppies || 0}
+                        {availablePuppies}
                       </p>
                     )}
                   </div>
@@ -58,7 +67,7 @@ export default function Dashboard() {
                       <Skeleton className="h-8 w-16" />
                     ) : (
                       <p className="text-3xl font-bold text-secondary" data-testid="text-pending-inquiries">
-                        {stats?.pendingInquiries || 0}
+                        {pendingInquiries}
                       </p>
                     )}
                   </div>
@@ -78,7 +87,7 @@ export default function Dashboard() {
                       <Skeleton className="h-8 w-16" />
                     ) : (
                       <p className="text-3xl font-bold text-green-600" data-testid="text-total-customers">
-                        {stats?.totalCustomers || 0}
+                        {totalCustomers}
                       </p>
                     )}
                   </div>
@@ -98,7 +107,7 @@ export default function Dashboard() {
                       <Skeleton className="h-8 w-16" />
                     ) : (
                       <p className="text-3xl font-bold text-purple-600" data-testid="text-gallery-photos">
-                        {stats?.galleryPhotos || 0}
+                        {totalGalleryPhotos}
                       </p>
                     )}
                   </div>
@@ -132,12 +141,12 @@ export default function Dashboard() {
                 ) : recentInquiriesSlice.length > 0 ? (
                   <div className="space-y-4">
                     {recentInquiriesSlice.map((inquiry) => (
-                      <div key={inquiry.id} className="flex items-center justify-between border-b pb-3">
+                      <div key={inquiry._id} className="flex items-center justify-between border-b pb-3">
                         <div>
-                          <p className="font-semibold" data-testid={`text-customer-${inquiry.id}`}>
-                            {inquiry.customerName}
+                          <p className="font-semibold" data-testid={`text-customer-${inquiry._id}`}>
+                            {inquiry.customer_name}
                           </p>
-                          <p className="text-sm text-gray-600 truncate max-w-xs" data-testid={`text-inquiry-${inquiry.id}`}>
+                          <p className="text-sm text-gray-600 truncate max-w-xs" data-testid={`text-inquiry-${inquiry._id}`}>
                             {inquiry.message}
                           </p>
                         </div>
@@ -163,7 +172,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-center">
                     <span>Available</span>
                     <span className="status-badge status-available">
-                      {stats?.availablePuppies || 0} puppies
+                      {availablePuppies} puppies
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

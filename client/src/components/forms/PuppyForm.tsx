@@ -1,15 +1,13 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery as useConvexQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertPuppySchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Camera, X, Plus } from "lucide-react";
-import { ObjectUploader } from "@/components/ObjectUploader";
+import { X, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
   Form,
@@ -26,9 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Puppy, InsertPuppy, ParentDog, Litter, InsertLitter } from "@shared/schema";
 import { z } from "zod";
-import type { UploadResult } from "@uppy/core";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +49,7 @@ const puppyFormSchema = z.object({
 type PuppyFormData = z.infer<typeof puppyFormSchema>;
 
 interface PuppyFormProps {
-  puppy?: Puppy | null;
+  puppy?: any | null;
   onClose: () => void;
 }
 
@@ -67,148 +63,91 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
   const [newLitterDateOfBirth, setNewLitterDateOfBirth] = useState('');
   const [newLitterDamId, setNewLitterDamId] = useState('');
   const [newLitterSireId, setNewLitterSireId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newParentId, setNewParentId] = useState<string | null>(null);
 
-  // Fetch parent dogs
-  const { data: parentDogs = [], refetch: refetchParentDogs } = useQuery({
-    queryKey: ['/api/admin/parent-dogs'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/admin/parent-dogs");
-      return response.json() as Promise<ParentDog[]>;
-    },
-  });
+  // Fetch parent dogs using Convex
+  const parentDogs = useConvexQuery(api.parentDogs.list) || [];
 
-  // Fetch litters
-  const { data: litters = [], refetch: refetchLitters, error: littersError } = useQuery({
-    queryKey: ['/api/admin/litters'],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/admin/litters");
-      const data = await response.json() as Litter[];
-      console.log('Litters data:', data);
-      return data;
-    },
-  });
+  // Fetch litters using Convex
+  const litters = useConvexQuery(api.litters.list) || [];
+  const littersError = litters === undefined;
 
-  // Mutation for creating new parent dog
-  const createParentMutation = useMutation({
-    mutationFn: async (parentData: { name: string; gender: 'male' | 'female' }) => {
-      const response = await apiRequest("POST", "/api/admin/parent-dogs", {
+  // Convex mutations
+  const createParentDog = useConvexMutation(api.parentDogs.create);
+  const createLitter = useConvexMutation(api.litters.create);
+  const createPuppy = useConvexMutation(api.puppies.create);
+  const updatePuppy = useConvexMutation(api.puppies.update);
+
+  // Handle creating new parent dog
+  const handleCreateParent = async (parentData: { name: string; gender: 'male' | 'female' }) => {
+    try {
+      const id = await createParentDog({
         name: parentData.name,
         gender: parentData.gender,
-        color: "Unknown", // Default color, can be edited later
-        dateOfBirth: new Date("2020-01-01"), // Default date, can be edited later
+        color: "Unknown",
+        date_of_birth: "2020-01-01",
         status: "active",
       });
-      return response.json() as Promise<ParentDog>;
-    },
-    onSuccess: (newParent) => {
-      refetchParentDogs();
+
       setShowAddParentDialog(false);
       setNewParentName('');
-      
+
       // Auto-select the newly created parent in litter form
       if (newParentType === 'dam') {
-        setNewLitterDamId(newParent.id);
+        setNewLitterDamId(id as string);
       } else {
-        setNewLitterSireId(newParent.id);
+        setNewLitterSireId(id as string);
       }
-      
+
       toast({
         title: "Success",
-        description: `${newParent.name} added as ${newParentType}`,
+        description: `${parentData.name} added as ${newParentType}`,
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error("Error creating parent dog:", error);
       toast({
         title: "Error",
         description: "Failed to create parent dog",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
-  // Mutation for creating new litter
-  const createLitterMutation = useMutation({
-    mutationFn: async (litterData: InsertLitter) => {
-      const response = await apiRequest("POST", "/api/admin/litters", litterData);
-      return response;
-    },
-    onSuccess: async (response) => {
-      const newLitter = await response.json() as Litter;
-      refetchLitters();
+  // Handle creating new litter
+  const handleCreateLitter = async (litterData: {
+    name: string;
+    dateOfBirth: Date;
+    damId: string | null;
+    sireId: string | null;
+  }) => {
+    try {
+      const id = await createLitter({
+        name: litterData.name,
+        date_of_birth: litterData.dateOfBirth.toISOString().split('T')[0],
+        dam_id: litterData.damId || undefined,
+        sire_id: litterData.sireId || undefined,
+        is_active: true,
+      });
+
       setShowAddLitterDialog(false);
       setNewLitterName('');
       setNewLitterDateOfBirth('');
       setNewLitterDamId('');
       setNewLitterSireId('');
-      
+
       // Auto-select the newly created litter
-      form.setValue("litterId", newLitter.id);
-      
+      form.setValue("litterId", id as string);
+
       toast({
         title: "Success",
-        description: `Litter "${newLitter.name}" created successfully`,
+        description: `Litter "${litterData.name}" created successfully`,
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error("Error creating litter:", error);
       toast({
         title: "Error",
         description: "Failed to create litter",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle photo upload completion
-  const handlePhotoUpload = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFiles = result.successful;
-      const newPhotoUrls: string[] = [];
-      
-      for (const uploadedFile of uploadedFiles) {
-        const uploadURL = uploadedFile.uploadURL;
-        if (uploadURL) {
-          try {
-            // Set ACL policy for the uploaded object
-            await apiRequest("PUT", "/api/gallery-photos", {
-              photoURL: uploadURL,
-            });
-            newPhotoUrls.push(uploadURL);
-          } catch (error) {
-            console.error("Error setting photo ACL:", error);
-            toast({
-              title: "Upload Warning",
-              description: "Photo uploaded but may not be publicly accessible",
-              variant: "destructive",
-            });
-          }
-        }
-      }
-      
-      // Convert GCS URLs to object paths and add to form
-      const normalizedUrls = newPhotoUrls.map(url => {
-        if (url.includes('storage.googleapis.com')) {
-          const matches = url.match(/\/\.private\/uploads\/([^?]+)/);
-          if (matches) {
-            return `/objects/uploads/${matches[1]}`;
-          }
-        }
-        return url;
-      });
-      
-      const currentPhotos = (form.getValues("photos") as string[]) || [];
-      const updatedPhotos = [...currentPhotos, ...normalizedUrls];
-      form.setValue("photos", updatedPhotos);
-      
-      toast({
-        title: "Success",
-        description: `${newPhotoUrls.length} photo(s) uploaded successfully`,
-      });
-    } else {
-      toast({
-        title: "Upload Failed",
-        description: "No files were uploaded successfully",
         variant: "destructive",
       });
     }
@@ -221,22 +160,10 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
     form.setValue("photos", updatedPhotos);
   };
 
-  const handleGetUploadParameters = async () => {
-    try {
-      const response = await apiRequest("POST", "/api/objects/upload");
-      const data = await response.json();
-      return {
-        method: "PUT" as const,
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to get upload URL",
-        variant: "destructive",
-      });
-      throw error;
-    }
+  // Add photo URL manually
+  const addPhotoUrl = (url: string) => {
+    const currentPhotos = (form.getValues("photos") as string[]) || [];
+    form.setValue("photos", [...currentPhotos, url]);
   };
 
   const form = useForm<PuppyFormData>({
@@ -246,13 +173,13 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
       color: puppy?.color || "",
       gender: puppy?.gender || "male",
       description: puppy?.description || "",
-      priceMin: puppy?.priceMin ? (puppy.priceMin / 100).toString() : "",
-      priceMax: puppy?.priceMax ? (puppy.priceMax / 100).toString() : "",
+      priceMin: puppy?.price_min ? (puppy.price_min / 100).toString() : "",
+      priceMax: puppy?.price_max ? (puppy.price_max / 100).toString() : "",
       status: puppy?.status || "available",
       photos: puppy?.photos || [],
-      litterId: puppy?.litterId || "",
-      healthTesting: puppy?.healthTesting || "",
-      microchipId: puppy?.microchipId || "",
+      litterId: puppy?.litter_id || "",
+      healthTesting: puppy?.health_testing || "",
+      microchipId: puppy?.microchip_id || "",
     },
   });
 
@@ -264,104 +191,60 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
         color: puppy.color || "",
         gender: puppy.gender || "male",
         description: puppy.description || "",
-        priceMin: puppy.priceMin ? (puppy.priceMin / 100).toString() : "",
-        priceMax: puppy.priceMax ? (puppy.priceMax / 100).toString() : "",
+        priceMin: puppy.price_min ? (puppy.price_min / 100).toString() : "",
+        priceMax: puppy.price_max ? (puppy.price_max / 100).toString() : "",
         status: puppy.status || "available",
         photos: puppy.photos || [],
-        litterId: puppy.litterId || "",
-        healthTesting: puppy.healthTesting || "",
-        microchipId: puppy.microchipId || "",
+        litterId: puppy.litter_id || "",
+        healthTesting: puppy.health_testing || "",
+        microchipId: puppy.microchip_id || "",
       });
     }
   }, [puppy, form]);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertPuppy) => {
-      await apiRequest("POST", "/api/admin/puppies", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/puppies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/puppies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Puppy created successfully",
-      });
-      onClose();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
+  const onSubmit = async (data: PuppyFormData) => {
+    setIsSubmitting(true);
+    try {
+      const submitData = {
+        name: data.name,
+        color: data.color,
+        gender: data.gender,
+        description: data.description || undefined,
+        price_min: data.priceMin ? Math.round(parseFloat(data.priceMin) * 100) : undefined,
+        price_max: data.priceMax ? Math.round(parseFloat(data.priceMax) * 100) : undefined,
+        status: data.status,
+        photos: data.photos,
+        litter_id: data.litterId as Id<"litters">,
+        health_testing: data.healthTesting || undefined,
+        microchip_id: data.microchipId || undefined,
+      };
+
+      if (puppy) {
+        await updatePuppy({
+          id: puppy._id as Id<"puppies">,
+          ...submitData,
         });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
+        toast({
+          title: "Success",
+          description: "Puppy updated successfully",
+        });
+      } else {
+        await createPuppy(submitData);
+        toast({
+          title: "Success",
+          description: "Puppy created successfully",
+        });
       }
+      onClose();
+    } catch (error) {
+      console.error("Error saving puppy:", error);
       toast({
         title: "Error",
-        description: "Failed to create puppy",
+        description: puppy ? "Failed to update puppy" : "Failed to create puppy",
         variant: "destructive",
       });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: InsertPuppy) => {
-      await apiRequest("PUT", `/api/admin/puppies/${puppy!.id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/puppies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/puppies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Puppy updated successfully",
-      });
-      onClose();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update puppy",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: PuppyFormData) => {
-    const submitData: InsertPuppy = {
-      name: data.name,
-      color: data.color,
-      gender: data.gender,
-      description: data.description || null,
-      priceMin: data.priceMin ? Math.round(parseFloat(data.priceMin) * 100) : undefined,
-      priceMax: data.priceMax ? Math.round(parseFloat(data.priceMax) * 100) : undefined,
-      status: data.status,
-      photos: data.photos,
-      litterId: data.litterId, // Now required
-      healthTesting: data.healthTesting || null,
-      microchipId: data.microchipId || null,
-    };
-
-    if (puppy) {
-      updateMutation.mutate(submitData);
-    } else {
-      createMutation.mutate(submitData);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -453,9 +336,9 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                           {littersError ? "Error loading litters" : "No litters available"}
                         </SelectItem>
                       ) : (
-                        litters.map((litter) => (
-                          <SelectItem key={litter.id} value={litter.id}>
-                            {litter.name} ({new Date(litter.dateOfBirth).toLocaleDateString()})
+                        litters.map((litter: any) => (
+                          <SelectItem key={litter._id} value={litter._id}>
+                            {litter.name} ({litter.date_of_birth ? new Date(litter.date_of_birth).toLocaleDateString() : 'No date'})
                           </SelectItem>
                         ))
                       )}
@@ -601,27 +484,25 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
           />
         </div>
 
-        {/* Photo Upload Section */}
+        {/* Photo URL Section */}
         <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">Puppy Photos</h3>
           </div>
-          
+
           {/* Display current photos */}
           {form.watch("photos").length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
               {form.watch("photos").map((photo, index) => {
-                // Convert object URLs to public serving URLs for display
-                const displayUrl = photo.startsWith('/objects/uploads/') 
-                  ? photo.replace('/objects/uploads/', '/public-objects/uploads/')
-                  : photo;
-                  
                 return (
                 <div key={index} className="relative group">
                   <img
-                    src={displayUrl}
+                    src={photo}
                     alt={`Puppy photo ${index + 1}`}
                     className="w-full h-32 object-cover rounded-lg border"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ddd" width="100" height="100"/><text fill="%23999" font-size="12" x="50%" y="50%" text-anchor="middle" dy=".3em">No image</text></svg>';
+                    }}
                   />
                   <button
                     type="button"
@@ -636,34 +517,47 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
               })}
             </div>
           )}
-          
-          <ObjectUploader
-            maxNumberOfFiles={5}
-            maxFileSize={10485760} // 10MB
-            onGetUploadParameters={handleGetUploadParameters}
-            onComplete={handlePhotoUpload}
-            buttonClassName="w-full bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
-          >
-            <Camera className="mr-2 h-4 w-4" />
-            {form.watch("photos").length > 0 ? "Add More Photos" : "Add Photos"}
-          </ObjectUploader>
+
+          {/* Manual photo URL input */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Enter photo URL..."
+              id="photo-url-input"
+              data-testid="input-photo-url"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const input = document.getElementById('photo-url-input') as HTMLInputElement;
+                if (input?.value) {
+                  addPhotoUrl(input.value);
+                  input.value = '';
+                }
+              }}
+              data-testid="button-add-photo-url"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">Add photo URLs from external sources</p>
         </div>
 
         <div className="flex justify-end space-x-4">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             onClick={onClose}
             data-testid="button-cancel-puppy"
           >
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            disabled={createMutation.isPending || updateMutation.isPending}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
             data-testid="button-save-puppy"
           >
-            {puppy ? 'Update' : 'Create'} Puppy
+            {isSubmitting ? 'Saving...' : (puppy ? 'Update' : 'Create')} Puppy
           </Button>
         </div>
       </form>
@@ -701,16 +595,16 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
               type="button"
               onClick={() => {
                 if (newParentName.trim()) {
-                  createParentMutation.mutate({
+                  handleCreateParent({
                     name: newParentName.trim(),
                     gender: newParentType === 'dam' ? 'female' : 'male',
                   });
                 }
               }}
-              disabled={!newParentName.trim() || createParentMutation.isPending}
+              disabled={!newParentName.trim()}
               data-testid="button-save-new-parent"
             >
-              {createParentMutation.isPending ? 'Adding...' : 'Add Parent'}
+              Add Parent
             </Button>
           </div>
         </div>
@@ -750,8 +644,8 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                   <SelectValue placeholder="Select dam..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {parentDogs.filter(dog => dog.gender === 'female').map((dog) => (
-                    <SelectItem key={dog.id} value={dog.id}>
+                  {parentDogs.filter((dog: any) => dog.gender === 'female').map((dog: any) => (
+                    <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
                     </SelectItem>
                   ))}
@@ -779,8 +673,8 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                   <SelectValue placeholder="Select sire..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {parentDogs.filter(dog => dog.gender === 'male').map((dog) => (
-                    <SelectItem key={dog.id} value={dog.id}>
+                  {parentDogs.filter((dog: any) => dog.gender === 'male').map((dog: any) => (
+                    <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
                     </SelectItem>
                   ))}
@@ -820,19 +714,17 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                   });
                   return;
                 }
-                
-                createLitterMutation.mutate({
+
+                handleCreateLitter({
                   name: newLitterName,
                   dateOfBirth: new Date(newLitterDateOfBirth),
                   damId: newLitterDamId || null,
                   sireId: newLitterSireId || null,
-                  isActive: true,
                 });
               }}
-              disabled={createLitterMutation.isPending}
               data-testid="button-create-litter"
             >
-              {createLitterMutation.isPending ? "Creating..." : "Create Litter"}
+              Create Litter
             </Button>
           </div>
         </div>

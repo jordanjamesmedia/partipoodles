@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,29 +9,39 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setLocation("/admin-login");
-    }
-  }, [isAuthenticated, isLoading, setLocation]);
+  // Check authentication synchronously on initial render
+  const checkAuth = () => {
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+    const adminUser = localStorage.getItem("adminUser");
+    console.log("AdminLayout auth check:", { adminLoggedIn, hasAdminUser: !!adminUser });
+    return adminLoggedIn === "true" && !!adminUser;
+  };
 
-  if (isLoading) {
+  const [isAuthenticated] = useState<boolean>(() => checkAuth());
+
+  useEffect(() => {
+    // Re-check and redirect if not authenticated
+    if (!isAuthenticated) {
+      console.log("Not authenticated, redirecting to login");
+      setLocation("/admin-login");
+    } else {
+      console.log("Authenticated, rendering admin layout");
+    }
+  }, [isAuthenticated, setLocation]);
+
+  if (!isAuthenticated) {
+    // Show brief loading while redirecting
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Redirecting to login...</p>
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (

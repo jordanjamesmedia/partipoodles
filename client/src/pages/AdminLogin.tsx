@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useConvex } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
 import { Eye, EyeOff, ShieldQuestion } from "lucide-react";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 
@@ -14,6 +15,7 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+  const convex = useConvex();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -26,17 +28,64 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      await apiRequest("POST", "/api/admin/login", formData);
+      console.log("Attempting login for:", formData.username);
+
+      // Use existing getByUsername query to validate credentials
+      const user = await convex.query(api.adminUsers.getByUsername, {
+        username: formData.username,
+      });
+
+      console.log("Query result:", user ? "User found" : "User not found");
+
+      if (!user) {
+        toast({
+          title: "Login Failed",
+          description: "User not found. Please check your username.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (user.password !== formData.password) {
+        toast({
+          title: "Login Failed",
+          description: "Invalid password. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (user.is_active === false) {
+        toast({
+          title: "Login Failed",
+          description: "This account has been deactivated.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Store admin user info in localStorage
+      localStorage.setItem("adminUser", JSON.stringify({
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+      }));
       login(); // Set local authentication state
+
       toast({
         title: "Success",
         description: "Successfully logged in to Puppy Portal",
       });
+
       setLocation("/admin");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login error:", error);
       toast({
-        title: "Login Failed", 
-        description: "Invalid username or password",
+        title: "Login Failed",
+        description: error?.message || "Connection error. Please check if Convex is configured.",
         variant: "destructive",
       });
     } finally {
