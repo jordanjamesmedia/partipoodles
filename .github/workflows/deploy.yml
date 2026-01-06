@@ -50,3 +50,9 @@ jobs:
         vercel-org-id: ${{ secrets.ORG_ID }}
         vercel-project-id: ${{ secrets.PROJECT_ID }}
         working-directory: ./
+
+    - name: Deploy Convex functions
+      if: github.ref == 'refs/heads/main'
+      run: npx convex deploy
+      env:
+        CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
