@@ -11,35 +11,33 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    // Check authentication directly from localStorage
+  // Check authentication synchronously on initial render
+  const checkAuth = () => {
     const adminLoggedIn = localStorage.getItem("adminLoggedIn");
     const adminUser = localStorage.getItem("adminUser");
-    const authenticated = adminLoggedIn === "true" && !!adminUser;
+    return adminLoggedIn === "true" && !!adminUser;
+  };
 
-    if (!authenticated) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkAuth());
+
+  useEffect(() => {
+    // Re-check and redirect if not authenticated
+    if (!isAuthenticated) {
       setLocation("/admin-login");
-    } else {
-      setIsAuthenticated(true);
     }
-  }, [setLocation]);
+  }, [isAuthenticated, setLocation]);
 
-  // Show loading while checking auth
-  if (isAuthenticated === null) {
+  if (!isAuthenticated) {
+    // Show brief loading while redirecting
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Redirecting to login...</p>
         </div>
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (
