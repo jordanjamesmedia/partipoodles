@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "tsc"
+    "check": "tsc",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel",
+    "deploy:logs": "vercel logs",
+    "deploy:list": "vercel ls",
+    "deploy:inspect": "vercel inspect"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.16.0",
