@@ -6,10 +6,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Mail, Users, Images } from "lucide-react";
 
 export default function Dashboard() {
+  // Use try-catch pattern for Convex queries to handle connection issues
   const puppies = useQuery(api.puppies.list);
   const inquiries = useQuery(api.inquiries.list);
   const customers = useQuery(api.customers.list);
   const galleryPhotos = useQuery(api.galleryPhotos.list);
+
+  // Debug logging
+  console.log("Dashboard data:", {
+    puppies: puppies === undefined ? "loading" : puppies?.length ?? 0,
+    inquiries: inquiries === undefined ? "loading" : inquiries?.length ?? 0,
+    customers: customers === undefined ? "loading" : customers?.length ?? 0,
+    galleryPhotos: galleryPhotos === undefined ? "loading" : galleryPhotos?.length ?? 0,
+  });
 
   const statsLoading = puppies === undefined || inquiries === undefined || customers === undefined || galleryPhotos === undefined;
   const inquiriesLoading = inquiries === undefined;

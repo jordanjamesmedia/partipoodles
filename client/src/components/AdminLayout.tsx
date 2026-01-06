@@ -16,15 +16,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const checkAuth = () => {
     const adminLoggedIn = localStorage.getItem("adminLoggedIn");
     const adminUser = localStorage.getItem("adminUser");
+    console.log("AdminLayout auth check:", { adminLoggedIn, hasAdminUser: !!adminUser });
     return adminLoggedIn === "true" && !!adminUser;
   };
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => checkAuth());
+  const [isAuthenticated] = useState<boolean>(() => checkAuth());
 
   useEffect(() => {
     // Re-check and redirect if not authenticated
     if (!isAuthenticated) {
+      console.log("Not authenticated, redirecting to login");
       setLocation("/admin-login");
+    } else {
+      console.log("Authenticated, rendering admin layout");
     }
   }, [isAuthenticated, setLocation]);
 
