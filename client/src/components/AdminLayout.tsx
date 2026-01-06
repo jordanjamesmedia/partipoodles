@@ -1,4 +1,3 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,17 +9,25 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setLocation("/admin-login");
-    }
-  }, [isAuthenticated, isLoading, setLocation]);
+    // Check authentication directly from localStorage
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+    const adminUser = localStorage.getItem("adminUser");
+    const authenticated = adminLoggedIn === "true" && !!adminUser;
 
-  if (isLoading) {
+    if (!authenticated) {
+      setLocation("/admin-login");
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [setLocation]);
+
+  // Show loading while checking auth
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
