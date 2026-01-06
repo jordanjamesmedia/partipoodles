@@ -55,3 +55,4 @@ temp/
 .netlify/
 windsurf_deployment.yaml
 .vercel
+.env*.local
