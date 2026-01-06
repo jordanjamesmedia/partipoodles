@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "convex/react";
+import { useConvex } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+  const convex = useConvex();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -22,21 +23,26 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginMutation = useMutation(api.adminUsers.login);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const result = await loginMutation({
+      // Use existing getByUsername query to validate credentials
+      const user = await convex.query(api.adminUsers.getByUsername, {
         username: formData.username,
-        password: formData.password,
       });
 
-      if (result.success && result.user) {
+      if (user && user.password === formData.password && user.is_active !== false) {
         // Store admin user info in localStorage
-        localStorage.setItem("adminUser", JSON.stringify(result.user));
+        localStorage.setItem("adminUser", JSON.stringify({
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role,
+        }));
         login(); // Set local authentication state
         toast({
           title: "Success",
@@ -46,7 +52,7 @@ export default function AdminLogin() {
       } else {
         toast({
           title: "Login Failed",
-          description: result.message || "Invalid username or password",
+          description: "Invalid username or password",
           variant: "destructive",
         });
       }
