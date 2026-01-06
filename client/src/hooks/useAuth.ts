@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+
+// Check auth synchronously from localStorage
+const checkAuthFromStorage = () => {
+  const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+  const adminUser = localStorage.getItem("adminUser");
+  return adminLoggedIn === "true" && !!adminUser;
+};
 
 export function useAuth() {
-  const [isLocallyAuthenticated, setIsLocallyAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Check localStorage for admin login state on mount
-  useEffect(() => {
-    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
-    const adminUser = localStorage.getItem("adminUser");
-    setIsLocallyAuthenticated(adminLoggedIn === "true" && !!adminUser);
-    setIsLoading(false);
-  }, []);
+  // Initialize synchronously from localStorage to avoid rendering issues
+  const [isLocallyAuthenticated, setIsLocallyAuthenticated] = useState(() => checkAuthFromStorage());
 
   const login = () => {
     localStorage.setItem("adminLoggedIn", "true");
@@ -38,7 +37,7 @@ export function useAuth() {
 
   return {
     user: getUser(),
-    isLoading,
+    isLoading: false, // No async loading - we check synchronously
     isAuthenticated: isLocallyAuthenticated,
     login,
     logout,
