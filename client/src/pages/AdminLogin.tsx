@@ -28,38 +28,64 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login for:", formData.username);
+
       // Use existing getByUsername query to validate credentials
       const user = await convex.query(api.adminUsers.getByUsername, {
         username: formData.username,
       });
 
-      if (user && user.password === formData.password && user.is_active !== false) {
-        // Store admin user info in localStorage
-        localStorage.setItem("adminUser", JSON.stringify({
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name,
-          lastName: user.last_name,
-          role: user.role,
-        }));
-        login(); // Set local authentication state
-        toast({
-          title: "Success",
-          description: "Successfully logged in to Puppy Portal",
-        });
-        setLocation("/admin");
-      } else {
+      console.log("Query result:", user ? "User found" : "User not found");
+
+      if (!user) {
         toast({
           title: "Login Failed",
-          description: "Invalid username or password",
+          description: "User not found. Please check your username.",
           variant: "destructive",
         });
+        return;
       }
-    } catch (error) {
+
+      if (user.password !== formData.password) {
+        toast({
+          title: "Login Failed",
+          description: "Invalid password. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (user.is_active === false) {
+        toast({
+          title: "Login Failed",
+          description: "This account has been deactivated.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Store admin user info in localStorage
+      localStorage.setItem("adminUser", JSON.stringify({
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+      }));
+      login(); // Set local authentication state
+
+      toast({
+        title: "Success",
+        description: "Successfully logged in to Puppy Portal",
+      });
+
+      setLocation("/admin");
+    } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Login Failed",
-        description: "Invalid username or password",
+        description: error?.message || "Connection error. Please check if Convex is configured.",
         variant: "destructive",
       });
     } finally {
