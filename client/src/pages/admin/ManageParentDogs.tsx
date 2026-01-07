@@ -87,9 +87,9 @@ export default function ManageParentDogs() {
     return statusMap[status as keyof typeof statusMap] || status;
   };
 
-  const formatWeight = (weightInGrams: number | undefined) => {
-    if (!weightInGrams) return "Not recorded";
-    return `${(weightInGrams / 1000).toFixed(1)} kg`;
+  const formatWeight = (weight: number | undefined) => {
+    if (!weight) return "Not recorded";
+    return `${weight.toFixed(1)} kg`;
   };
 
   // Convert parent dog to format expected by form
@@ -99,19 +99,15 @@ export default function ManageParentDogs() {
     registeredName: dog.registered_name || null,
     color: dog.color || "",
     gender: dog.gender as "male" | "female",
-    dateOfBirth: dog.date_of_birth ? new Date(dog.date_of_birth) : new Date(),
+    dateOfBirth: dog.date_of_birth ? new Date(dog.date_of_birth) : null,
     description: dog.description || null,
     photos: dog.photos || [],
     status: dog.status,
     healthTesting: dog.health_testing || null,
     achievements: dog.achievements || null,
     pedigree: dog.pedigree || null,
-    microchipId: dog.microchip_id || null,
-    registrationNumber: dog.registration_number || null,
     weight: dog.weight || null,
     height: dog.height || null,
-    createdAt: dog.created_at ? new Date(dog.created_at) : null,
-    updatedAt: dog.updated_at ? new Date(dog.updated_at) : null,
   });
 
   return (
