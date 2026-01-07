@@ -1,41 +1,100 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// Get all parent dogs
+// Helper to check if a string is a Convex storage ID
+const isStorageId = (url: string) => {
+  // Convex storage IDs are alphanumeric strings without slashes or dots
+  return /^[a-z0-9]{20,}$/i.test(url);
+};
+
+// Helper to resolve photo URLs from storage IDs
+const resolvePhotoUrls = async (ctx: any, photos: string[] | undefined) => {
+  if (!photos || photos.length === 0) return [];
+
+  const resolvedPhotos = await Promise.all(
+    photos.map(async (photo) => {
+      if (isStorageId(photo)) {
+        try {
+          const url = await ctx.storage.getUrl(photo as any);
+          return url || photo;
+        } catch {
+          return photo;
+        }
+      }
+      return photo;
+    })
+  );
+
+  return resolvedPhotos;
+};
+
+// Get all parent dogs with resolved photo URLs
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("parent_dogs").collect();
+    const dogs = await ctx.db.query("parent_dogs").collect();
+
+    // Resolve storage IDs to URLs for all dogs
+    const dogsWithUrls = await Promise.all(
+      dogs.map(async (dog) => {
+        const resolvedPhotos = await resolvePhotoUrls(ctx, dog.photos);
+        return { ...dog, photos: resolvedPhotos };
+      })
+    );
+
+    return dogsWithUrls;
   },
 });
 
-// Get active parent dogs
+// Get active parent dogs with resolved photo URLs
 export const listActive = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const dogs = await ctx.db
       .query("parent_dogs")
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
+
+    const dogsWithUrls = await Promise.all(
+      dogs.map(async (dog) => {
+        const resolvedPhotos = await resolvePhotoUrls(ctx, dog.photos);
+        return { ...dog, photos: resolvedPhotos };
+      })
+    );
+
+    return dogsWithUrls;
   },
 });
 
-// Get a single parent dog by ID
+// Get a single parent dog by ID with resolved photo URLs
 export const get = query({
   args: { id: v.id("parent_dogs") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const dog = await ctx.db.get(args.id);
+    if (!dog) return null;
+
+    const resolvedPhotos = await resolvePhotoUrls(ctx, dog.photos);
+    return { ...dog, photos: resolvedPhotos };
   },
 });
 
-// Get parent dogs by gender
+// Get parent dogs by gender with resolved photo URLs
 export const listByGender = query({
   args: { gender: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const dogs = await ctx.db
       .query("parent_dogs")
       .withIndex("by_gender", (q) => q.eq("gender", args.gender))
       .collect();
+
+    const dogsWithUrls = await Promise.all(
+      dogs.map(async (dog) => {
+        const resolvedPhotos = await resolvePhotoUrls(ctx, dog.photos);
+        return { ...dog, photos: resolvedPhotos };
+      })
+    );
+
+    return dogsWithUrls;
   },
 });
 
