@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import AdminSidebar from "@/components/AdminSidebar";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -19,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,19 +25,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Upload, Eye, Trash2, Globe, Lock, ToggleLeft, ToggleRight } from "lucide-react";
-import type { GalleryPhoto } from "@shared/schema";
-import type { UploadResult } from "@uppy/core";
 import OrientationFixedImage from "@/components/OrientationFixedImage";
+import type { Id } from "../../../../convex/_generated/dataModel";
 
-// Convert storage URL to serving endpoint with compression support
+// Photo type for Convex data
+interface ConvexGalleryPhoto {
+  _id: Id<"gallery_photos">;
+  url: string;
+  imageUrl?: string;
+  caption?: string | null;
+  filename: string;
+  is_public?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Get the best available image URL
+function getImageUrl(photo: ConvexGalleryPhoto): string {
+  return photo.imageUrl || photo.url;
+}
+
+// Convert storage URL to serving endpoint (for Convex URLs, just return as-is)
 function convertToPublicUrl(storageUrl: string, options?: {
   quality?: number;
   width?: number;
   height?: number;
   compress?: boolean;
 }) {
+  // If it's already a full URL (from Convex storage), use it directly
+  if (storageUrl.startsWith('https://')) {
+    return storageUrl;
+  }
+
   let publicUrl = storageUrl;
-  
+
   // Handle /objects/uploads/ URLs by converting to public serving endpoint
   if (storageUrl.startsWith('/objects/uploads/')) {
     publicUrl = storageUrl.replace('/objects/uploads/', '/public-objects/uploads/');
@@ -50,10 +69,10 @@ function convertToPublicUrl(storageUrl: string, options?: {
       publicUrl = `/public-objects/uploads/${matches[1]}`;
     }
   }
-  
-  // Add compression parameters for fast loading
+
+  // Add compression parameters for fast loading (only for local endpoints)
   const params = new URLSearchParams();
-  
+
   if (options?.compress !== false) {
     params.append('compress', 'true');
   }
@@ -66,27 +85,26 @@ function convertToPublicUrl(storageUrl: string, options?: {
   if (options?.height) {
     params.append('height', options.height.toString());
   }
-  
+
   // Add cache-busting parameter to force fresh orientation processing
   params.append('v', '20250825-orientation-fix');
-  
+
   if (params.toString()) {
     publicUrl += `?${params.toString()}`;
   }
-  
+
   return publicUrl;
 }
 
 export default function PhotoGallery() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<ConvexGalleryPhoto | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [caption, setCaption] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Redirect to home if not authenticated
+  // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -101,204 +119,59 @@ export default function PhotoGallery() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: allPhotos = [], isLoading: photosLoading } = useQuery<GalleryPhoto[]>({
-    queryKey: ["/api/admin/gallery"],
-    enabled: !!isAuthenticated,
-  });
+  // Fetch all photos from Convex
+  const allPhotos = useQuery(api.galleryPhotos.list) ?? [];
+  const photosLoading = allPhotos === undefined;
+
+  // Convex mutations
+  const updatePhoto = useMutation(api.galleryPhotos.update);
+  const deletePhoto = useMutation(api.galleryPhotos.remove);
 
   // Filter photos based on publication status
-  const photos = allPhotos.filter(photo => {
-    if (statusFilter === "public") return photo.isPublic;
-    if (statusFilter === "private") return !photo.isPublic;
+  const photos = allPhotos.filter((photo: ConvexGalleryPhoto) => {
+    if (statusFilter === "public") return photo.is_public === true;
+    if (statusFilter === "private") return photo.is_public !== true;
     return true; // "all"
   });
 
-  const publicCount = allPhotos.filter(p => p.isPublic).length;
-  const privateCount = allPhotos.filter(p => !p.isPublic).length;
+  const publicCount = allPhotos.filter((p: ConvexGalleryPhoto) => p.is_public === true).length;
+  const privateCount = allPhotos.filter((p: ConvexGalleryPhoto) => p.is_public !== true).length;
 
-  const deletePhotoMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/gallery/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Photo deleted successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
+  const handleDelete = async (id: Id<"gallery_photos">) => {
+    if (confirm("Are you sure you want to delete this photo?")) {
+      try {
+        await deletePhoto({ id });
         toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
+          title: "Success",
+          description: "Photo deleted successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete photo",
           variant: "destructive",
         });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
       }
-      toast({
-        title: "Error",
-        description: "Failed to delete photo",
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  };
 
-  const addPhotoMutation = useMutation({
-    mutationFn: async (photoData: { filename: string; url: string; caption?: string }) => {
-      await apiRequest("POST", "/api/admin/gallery", photoData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
+  const handleTogglePublic = async (id: Id<"gallery_photos">, currentIsPublic: boolean) => {
+    try {
+      await updatePhoto({ id, is_public: !currentIsPublic });
       toast({
         title: "Success",
-        description: "Photo added to gallery successfully",
+        description: `Photo is now ${!currentIsPublic ? 'public' : 'private'}`,
       });
-      setIsUploadOpen(false);
-      setCaption("");
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to add photo to gallery",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const togglePublicMutation = useMutation({
-    mutationFn: async ({ id, isPublic }: { id: string; isPublic: boolean }) => {
-      await apiRequest("PUT", `/api/admin/gallery/${id}`, { isPublic });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/gallery"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/gallery"] }); // Refresh public gallery too
-      toast({
-        title: "Success",
-        description: "Photo visibility updated successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update photo visibility",
         variant: "destructive",
       });
-    },
-  });
-
-  const handleGetUploadParameters = async () => {
-    try {
-      const response = await apiRequest("POST", "/api/objects/upload");
-      const data = await response.json();
-      return {
-        method: "PUT" as const,
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        throw error;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to get upload URL",
-        variant: "destructive",
-      });
-      throw error;
     }
   };
 
-  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const uploadURL = uploadedFile.uploadURL;
-      
-      try {
-        // Set ACL policy for the uploaded object
-        await apiRequest("PUT", "/api/gallery-photos", {
-          photoURL: uploadURL,
-        });
-
-        // Add to gallery - normalize the URL for admin uploads
-        const filename = uploadedFile.name || 'uploaded-photo';
-        
-        // Convert the full GCS URL to a normalized object path
-        let normalizedUrl = uploadURL || '';
-        if (normalizedUrl.includes('storage.googleapis.com')) {
-          const matches = normalizedUrl.match(/\/\.private\/uploads\/([^?]+)/);
-          if (matches) {
-            normalizedUrl = `/objects/uploads/${matches[1]}`;
-          }
-        }
-        
-        addPhotoMutation.mutate({
-          filename,
-          url: normalizedUrl,
-          caption: caption.trim() || undefined,
-        });
-      } catch (error) {
-        if (isUnauthorizedError(error as Error)) {
-          toast({
-            title: "Unauthorized",
-            description: "You are logged out. Logging in again...",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = "/admin-login";
-          }, 500);
-          return;
-        }
-        toast({
-          title: "Error",
-          description: "Failed to process uploaded photo",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this photo?")) {
-      deletePhotoMutation.mutate(id);
-    }
-  };
-
-  const handleViewPhoto = (photo: GalleryPhoto) => {
+  const handleViewPhoto = (photo: ConvexGalleryPhoto) => {
     setSelectedPhoto(photo);
     setIsViewOpen(true);
   };
@@ -318,7 +191,7 @@ export default function PhotoGallery() {
     <div className="min-h-screen bg-gray-100">
       <div className="flex">
         <AdminSidebar />
-        
+
         <div className="flex-1 p-8">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -339,34 +212,15 @@ export default function PhotoGallery() {
                   <DialogTitle>Upload New Photo</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="caption">Caption (Optional)</Label>
-                    <Input
-                      id="caption"
-                      value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      placeholder="Enter photo caption..."
-                      data-testid="input-photo-caption"
-                    />
-                  </div>
-                  
-                  <ObjectUploader
-                    maxNumberOfFiles={1}
-                    maxFileSize={10485760} // 10MB
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleUploadComplete}
-                    buttonClassName="w-full"
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <Upload className="h-5 w-5" />
-                      <span>Select Photo to Upload</span>
-                    </div>
-                  </ObjectUploader>
+                  <p className="text-sm text-gray-600">
+                    Photo upload via admin is being migrated. Please use the public gallery upload form at{" "}
+                    <a href="/gallery" className="text-primary underline">/gallery</a> for now.
+                  </p>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
-          
+
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -399,24 +253,24 @@ export default function PhotoGallery() {
                 </div>
               ) : photos.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                  {photos.map((photo) => {
+                  {photos.map((photo: ConvexGalleryPhoto) => {
                     return (
-                      <div key={photo.id} className="relative group">
-                        <OrientationFixedImage 
-                          src={convertToPublicUrl(photo.url, { width: 200, quality: 70, compress: true })} 
+                      <div key={photo._id} className="relative group">
+                        <OrientationFixedImage
+                          src={convertToPublicUrl(getImageUrl(photo), { width: 200, quality: 70, compress: true })}
                           alt={photo.caption || photo.filename}
                           className="w-full h-32 object-cover rounded-lg cursor-pointer"
                           onClick={() => handleViewPhoto(photo)}
-                          data-testid={`img-gallery-${photo.id}`}
+                          data-testid={`img-gallery-${photo._id}`}
                         />
-                        
+
                         {/* Public/Private Status Badge */}
                         <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${
-                          photo.isPublic 
-                            ? 'bg-green-500 text-white' 
+                          photo.is_public
+                            ? 'bg-green-500 text-white'
                             : 'bg-yellow-500 text-black'
                         }`}>
-                          {photo.isPublic ? (
+                          {photo.is_public ? (
                             <div className="flex items-center gap-1">
                               <Globe className="h-3 w-3" />
                               <span>Live</span>
@@ -428,26 +282,25 @@ export default function PhotoGallery() {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 rounded-lg flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 space-x-2">
                             <Button
                               variant="secondary"
                               size="sm"
                               onClick={() => handleViewPhoto(photo)}
-                              data-testid={`button-view-${photo.id}`}
+                              data-testid={`button-view-${photo._id}`}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant={photo.isPublic ? "outline" : "default"}
+                              variant={photo.is_public ? "outline" : "default"}
                               size="sm"
-                              onClick={() => togglePublicMutation.mutate({ id: photo.id, isPublic: !photo.isPublic })}
-                              disabled={togglePublicMutation.isPending}
-                              data-testid={`button-toggle-${photo.id}`}
-                              title={photo.isPublic ? "Make Private" : "Make Public"}
+                              onClick={() => handleTogglePublic(photo._id, photo.is_public ?? false)}
+                              data-testid={`button-toggle-${photo._id}`}
+                              title={photo.is_public ? "Make Private" : "Make Public"}
                             >
-                              {photo.isPublic ? (
+                              {photo.is_public ? (
                                 <ToggleRight className="h-4 w-4" />
                               ) : (
                                 <ToggleLeft className="h-4 w-4" />
@@ -456,9 +309,8 @@ export default function PhotoGallery() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() => handleDelete(photo.id)}
-                              disabled={deletePhotoMutation.isPending}
-                              data-testid={`button-delete-photo-${photo.id}`}
+                              onClick={() => handleDelete(photo._id)}
+                              data-testid={`button-delete-photo-${photo._id}`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -476,14 +328,11 @@ export default function PhotoGallery() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-gray-500 mb-4">No photos in gallery</p>
-                  <Button 
-                    onClick={() => setIsUploadOpen(true)} 
-                    className="btn-primary"
-                    data-testid="button-upload-first-photo"
-                  >
-                    <Upload className="mr-2 h-5 w-5" />
-                    Upload Your First Photo
-                  </Button>
+                  <p className="text-sm text-gray-400">
+                    Upload photos via the{" "}
+                    <a href="/gallery" className="text-primary underline">public gallery</a>{" "}
+                    upload form
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -497,8 +346,8 @@ export default function PhotoGallery() {
               </DialogHeader>
               {selectedPhoto && (
                 <div className="space-y-4">
-                  <OrientationFixedImage 
-                    src={convertToPublicUrl(selectedPhoto.url, { width: 1200, quality: 85, compress: true })} 
+                  <OrientationFixedImage
+                    src={convertToPublicUrl(getImageUrl(selectedPhoto), { width: 1200, quality: 85, compress: true })}
                     alt={selectedPhoto.caption || selectedPhoto.filename}
                     className="w-full h-auto max-h-96 object-contain rounded-lg"
                   />
@@ -507,8 +356,10 @@ export default function PhotoGallery() {
                     {selectedPhoto.caption && (
                       <p><strong>Caption:</strong> {selectedPhoto.caption}</p>
                     )}
-                    <p><strong>Uploaded:</strong> {new Date(selectedPhoto.createdAt!).toLocaleDateString()}</p>
-                    <p><strong>Public:</strong> {selectedPhoto.isPublic ? 'Yes' : 'No'}</p>
+                    {selectedPhoto.created_at && (
+                      <p><strong>Uploaded:</strong> {new Date(selectedPhoto.created_at).toLocaleDateString()}</p>
+                    )}
+                    <p><strong>Public:</strong> {selectedPhoto.is_public ? 'Yes' : 'No'}</p>
                   </div>
                 </div>
               )}

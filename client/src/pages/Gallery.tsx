@@ -20,6 +20,7 @@ import type { UploadResult } from "@uppy/core";
 interface GalleryPhotoData {
   _id: string;
   url: string;
+  imageUrl?: string; // Resolved URL from Convex storage
   caption?: string | null;
   filename: string;
   is_public?: boolean;
@@ -62,6 +63,12 @@ export default function Gallery() {
   const parentDogs = parentDogsData ?? [];
   const isLoading = photosData === undefined;
 
+  // Get the best available image URL
+  const getImageUrl = (photo: GalleryPhotoData) => {
+    // Prefer imageUrl (resolved from Convex storage) over url
+    return photo.imageUrl || photo.url;
+  };
+
   // Convert storage URL to serving endpoint with compression support
   const convertToPublicUrl = (storageUrl: string, options?: {
     quality?: number;
@@ -69,8 +76,13 @@ export default function Gallery() {
     height?: number;
     compress?: boolean;
   }) => {
+    // If it's already a full URL (from Convex storage), use it directly
+    if (storageUrl.startsWith('https://')) {
+      return storageUrl;
+    }
+
     let publicUrl = storageUrl;
-    
+
     // Handle /objects/uploads/ URLs by converting to public serving endpoint
     if (storageUrl.startsWith('/objects/uploads/')) {
       publicUrl = storageUrl.replace('/objects/uploads/', '/public-objects/uploads/');
@@ -81,10 +93,10 @@ export default function Gallery() {
         publicUrl = `/public-objects/uploads/${matches[1]}`;
       }
     }
-    
-    // Add compression parameters for fast loading
+
+    // Add compression parameters for fast loading (only for local endpoints)
     const params = new URLSearchParams();
-    
+
     if (options?.compress !== false) {
       params.append('compress', 'true');
     }
@@ -97,14 +109,14 @@ export default function Gallery() {
     if (options?.height) {
       params.append('height', options.height.toString());
     }
-    
+
     // Add cache-busting parameter to force fresh orientation processing
     params.append('v', '20250825-orientation-fix');
-    
+
     if (params.toString()) {
       publicUrl += `?${params.toString()}`;
     }
-    
+
     return publicUrl;
   };
 
@@ -547,7 +559,7 @@ export default function Gallery() {
                   data-testid={`gallery-photo-${photo._id}`}
                 >
                   <OrientationFixedImage
-                    src={convertToPublicUrl(photo.url, { width: 400, quality: 65, compress: true })}
+                    src={convertToPublicUrl(getImageUrl(photo), { width: 400, quality: 65, compress: true })}
                     alt={photo.caption || "Gallery photo"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     loading="lazy"
@@ -616,14 +628,14 @@ export default function Gallery() {
               <div className="relative">
                 {/* Low quality preview loads first */}
                 <OrientationFixedImage
-                  src={convertToPublicUrl(selectedPhoto.url, { width: 800, quality: 60, compress: true })}
+                  src={convertToPublicUrl(getImageUrl(selectedPhoto), { width: 800, quality: 60, compress: true })}
                   alt={selectedPhoto.caption || "Gallery photo"}
                   className="w-full h-auto max-h-[80vh] object-contain opacity-50 blur-sm"
                 />
-                
+
                 {/* High quality image loads on top */}
                 <OrientationFixedImage
-                  src={convertToPublicUrl(selectedPhoto.url, { width: 1400, quality: 85, compress: true })}
+                  src={convertToPublicUrl(getImageUrl(selectedPhoto), { width: 1400, quality: 85, compress: true })}
                   alt={selectedPhoto.caption || "Gallery photo"}
                   className="w-full h-auto max-h-[80vh] object-contain absolute inset-0 opacity-0 transition-opacity duration-500"
                   onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
