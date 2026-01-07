@@ -173,7 +173,7 @@ export default function ManagePuppies() {
                             {puppy.litter_id ? (
                               (() => {
                                 const litter = litters?.find((l: any) => l._id === puppy.litter_id);
-                                return litter ? new Date(litter.date_of_birth).toLocaleDateString() : 'No litter';
+                                return litter?.date_of_birth ? new Date(litter.date_of_birth).toLocaleDateString() : 'No litter';
                               })()
                             ) : (
                               puppy.litter_date_of_birth
