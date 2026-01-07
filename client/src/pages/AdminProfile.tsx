@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,8 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Edit2, Save, X } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import type { AdminUser } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+import AdminLayout from "@/components/AdminLayout";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -24,18 +23,42 @@ const profileSchema = z.object({
 
 type ProfileForm = z.infer<typeof profileSchema>;
 
+// Profile type from localStorage
+interface AdminProfile {
+  id?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  role?: string;
+  profileImageUrl?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
+}
+
 export default function AdminProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
 
-  const { data: profile, isLoading, error } = useQuery<AdminUser>({
-    queryKey: ["/api/admin/profile"],
-    retry: (failureCount, error: any) => {
-      if (error?.status === 401) return false;
-      return failureCount < 3;
-    },
-  });
+  // Get profile from localStorage
+  const [profile, setProfile] = useState<AdminProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Load profile from localStorage
+    const adminUser = localStorage.getItem("adminUser");
+    if (adminUser) {
+      try {
+        setProfile(JSON.parse(adminUser));
+      } catch {
+        setProfile(null);
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -59,39 +82,33 @@ export default function AdminProfile() {
     }
   }, [profile, form]);
 
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: ProfileForm) => {
-      const response = await fetch("/api/admin/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update profile");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const onSubmit = (data: ProfileForm) => {
+    setIsUpdating(true);
+    try {
+      // Update profile in localStorage
+      const updatedProfile = {
+        ...profile,
+        ...data,
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem("adminUser", JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
       toast({
         title: "Success",
         description: "Profile updated successfully",
       });
       setIsEditing(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/profile"] });
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
         variant: "destructive",
       });
-    },
-  });
-
-  const onSubmit = (data: ProfileForm) => {
-    updateProfileMutation.mutate(data);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleCancel = () => {
@@ -101,24 +118,24 @@ export default function AdminProfile() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </AdminLayout>
     );
   }
 
-  if (error) {
+  if (!profile && !isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-destructive mb-4">Failed to load profile</p>
-          <Button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/admin/profile"] })}
-          >
-            Retry
-          </Button>
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-destructive mb-4">No profile data found</p>
+            <p className="text-muted-foreground">Please log out and log in again.</p>
+          </div>
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
@@ -139,6 +156,7 @@ export default function AdminProfile() {
   };
 
   return (
+    <AdminLayout>
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Admin Profile</h1>
@@ -285,10 +303,10 @@ export default function AdminProfile() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={updateProfileMutation.isPending}
+                    disabled={isUpdating}
                     data-testid="button-save-profile"
                   >
-                    {updateProfileMutation.isPending ? (
+                    {isUpdating ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
@@ -356,5 +374,6 @@ export default function AdminProfile() {
         </Card>
       </div>
     </div>
+    </AdminLayout>
   );
 }
