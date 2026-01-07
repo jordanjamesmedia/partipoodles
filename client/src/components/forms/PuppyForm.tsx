@@ -713,7 +713,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                 <SelectTrigger data-testid="select-new-litter-dam">
                   <SelectValue placeholder="Select dam..." />
                 </SelectTrigger>
-                <SelectContent className="z-[400]">
+                <SelectContent className="z-[600]">
                   {parentDogs.filter((dog: any) => dog.gender === 'female').map((dog: any) => (
                     <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
@@ -742,7 +742,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                 <SelectTrigger data-testid="select-new-litter-sire">
                   <SelectValue placeholder="Select sire..." />
                 </SelectTrigger>
-                <SelectContent className="z-[400]">
+                <SelectContent className="z-[600]">
                   {parentDogs.filter((dog: any) => dog.gender === 'male').map((dog: any) => (
                     <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
