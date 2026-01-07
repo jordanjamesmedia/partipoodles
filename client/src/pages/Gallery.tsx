@@ -2,9 +2,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useState, useRef } from "react";
-import { Eye, X, Upload, Camera } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Eye, X, Upload, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import OrientationFixedImage from "@/components/OrientationFixedImage";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,8 @@ interface GalleryPhotoData {
 
 export default function Gallery() {
   const uploadFormRef = useRef<HTMLElement>(null);
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhotoData | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploaderName, setUploaderName] = useState("");
   const [uploaderEmail, setUploaderEmail] = useState("");
@@ -62,6 +62,61 @@ export default function Gallery() {
   const photos = photosData ?? [];
   const parentDogs = parentDogsData ?? [];
   const isLoading = photosData === undefined;
+  const selectedPhoto = selectedPhotoIndex !== null ? photos[selectedPhotoIndex] : null;
+
+  // Lightbox navigation
+  const goToPrevious = useCallback(() => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex > 0) {
+      setImageLoaded(false);
+      setSelectedPhotoIndex(selectedPhotoIndex - 1);
+    }
+  }, [selectedPhotoIndex]);
+
+  const goToNext = useCallback(() => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1) {
+      setImageLoaded(false);
+      setSelectedPhotoIndex(selectedPhotoIndex + 1);
+    }
+  }, [selectedPhotoIndex, photos.length]);
+
+  const closeLightbox = useCallback(() => {
+    setSelectedPhotoIndex(null);
+    setImageLoaded(false);
+  }, []);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedPhotoIndex === null) return;
+
+      switch (e.key) {
+        case 'Escape':
+          closeLightbox();
+          break;
+        case 'ArrowLeft':
+          goToPrevious();
+          break;
+        case 'ArrowRight':
+          goToNext();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPhotoIndex, goToPrevious, goToNext, closeLightbox]);
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    if (selectedPhotoIndex !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedPhotoIndex]);
 
   // Get the best available image URL
   const getImageUrl = (photo: GalleryPhotoData) => {
@@ -551,11 +606,14 @@ export default function Gallery() {
             </div>
           ) : photos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {photos.map((photo) => (
+              {photos.map((photo, index) => (
                 <div
                   key={photo._id}
                   className="group relative aspect-square rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => setSelectedPhoto(photo)}
+                  onClick={() => {
+                    setImageLoaded(false);
+                    setSelectedPhotoIndex(index);
+                  }}
                   data-testid={`gallery-photo-${photo._id}`}
                 >
                   <OrientationFixedImage
@@ -612,48 +670,88 @@ export default function Gallery() {
         </div>
       </section>
 
-      {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl p-0 bg-white">
-          <DialogTitle className="sr-only">Gallery Photo</DialogTitle>
-          {selectedPhoto && (
-            <div className="relative">
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                data-testid="close-photo-modal"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <div className="relative">
-                {/* Low quality preview loads first */}
-                <OrientationFixedImage
-                  src={convertToPublicUrl(getImageUrl(selectedPhoto), { width: 800, quality: 60, compress: true })}
-                  alt={selectedPhoto.caption || "Gallery photo"}
-                  className="w-full h-auto max-h-[80vh] object-contain opacity-50 blur-sm"
-                />
+      {/* Custom Lightbox */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Dark backdrop */}
+          <div className="absolute inset-0 bg-black/95" />
 
-                {/* High quality image loads on top */}
-                <OrientationFixedImage
-                  src={convertToPublicUrl(getImageUrl(selectedPhoto), { width: 1400, quality: 85, compress: true })}
-                  alt={selectedPhoto.caption || "Gallery photo"}
-                  className="w-full h-auto max-h-[80vh] object-contain absolute inset-0 opacity-0 transition-opacity duration-500"
-                  onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                    e.currentTarget.style.opacity = '1';
-                    const preview = e.currentTarget.previousElementSibling as HTMLImageElement;
-                    if (preview) preview.style.display = 'none';
-                  }}
-                />
-              </div>
-              {selectedPhoto.caption && (
-                <div className="p-6 bg-white">
-                  <p className="text-gray-800 text-center font-medium">{selectedPhoto.caption}</p>
-                </div>
-              )}
-            </div>
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+            data-testid="close-photo-modal"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Navigation buttons */}
+          {selectedPhotoIndex !== null && selectedPhotoIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
+              className="absolute left-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              data-testid="lightbox-prev"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
           )}
-        </DialogContent>
-      </Dialog>
+
+          {selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              className="absolute right-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              data-testid="lightbox-next"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Image container */}
+          <div
+            className="relative z-10 flex flex-col items-center justify-center max-w-[95vw] max-h-[95vh] px-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Loading spinner */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
+              </div>
+            )}
+
+            {/* Main image */}
+            <img
+              src={convertToPublicUrl(getImageUrl(selectedPhoto), { compress: false })}
+              alt={selectedPhoto.caption || "Gallery photo"}
+              className={`max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setImageLoaded(true)}
+              draggable={false}
+            />
+
+            {/* Caption */}
+            {selectedPhoto.caption && imageLoaded && (
+              <div className="mt-4 px-6 py-3 bg-black/50 backdrop-blur-sm rounded-full">
+                <p className="text-white text-center font-medium text-sm md:text-base">{selectedPhoto.caption}</p>
+              </div>
+            )}
+
+            {/* Photo counter */}
+            {imageLoaded && (
+              <div className="mt-3 text-white/60 text-sm">
+                {selectedPhotoIndex !== null && `${selectedPhotoIndex + 1} / ${photos.length}`}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
