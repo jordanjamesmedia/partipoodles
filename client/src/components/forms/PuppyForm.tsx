@@ -635,7 +635,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
 
     {/* Add Parent Dog Dialog */}
     <Dialog open={showAddParentDialog} onOpenChange={setShowAddParentDialog}>
-      <DialogContent>
+      <DialogContent className="z-[500]">
         <DialogHeader>
           <DialogTitle>Add New {newParentType === 'dam' ? 'Dam (Mother)' : 'Sire (Father)'}</DialogTitle>
         </DialogHeader>
@@ -683,7 +683,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
 
     {/* Add New Litter Dialog */}
     <Dialog open={showAddLitterDialog} onOpenChange={setShowAddLitterDialog}>
-      <DialogContent>
+      <DialogContent className="z-[500]">
         <DialogHeader>
           <DialogTitle>Add New Litter</DialogTitle>
         </DialogHeader>
