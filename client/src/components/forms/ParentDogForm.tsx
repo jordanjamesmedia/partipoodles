@@ -8,10 +8,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, X, Plus } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 
 // Form validation schema
@@ -53,37 +53,17 @@ interface ParentDogFormProps {
   onSuccess?: () => void;
 }
 
-function convertToPublicUrl(url: string): string {
-  // If it's already a full URL (from Convex storage), use it directly
-  if (url.startsWith('https://')) {
-    return url;
-  }
-
-  // Convert /objects/uploads/ to /public-objects/uploads/ for proper serving
-  if (url.startsWith('/objects/uploads/')) {
-    return url.replace('/objects/uploads/', '/public-objects/uploads/');
-  }
-
-  // If it's a full GCS URL, convert it
-  if (url.includes('storage.googleapis.com')) {
-    const matches = url.match(/\/\.private\/uploads\/([^?]+)/);
-    if (matches) {
-      return `/public-objects/uploads/${matches[1]}`;
-    }
-  }
-
-  return url;
-}
-
 export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormProps) {
   const { toast } = useToast();
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>(parentDog?.photos || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [photoUrlInput, setPhotoUrlInput] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Convex mutations
   const createParentDog = useMutation(api.parentDogs.create);
   const updateParentDog = useMutation(api.parentDogs.update);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
 
   const form = useForm<FormData>({
     resolver: zodResolver(parentDogFormSchema),
@@ -109,27 +89,59 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
     form.setValue('photos', uploadedPhotos);
   }, [uploadedPhotos, form]);
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        // Get upload URL from Convex
+        const uploadUrl = await generateUploadUrl();
+
+        // Upload file to Convex storage
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const { storageId } = await response.json();
+
+        // Add storage ID to photos array
+        setUploadedPhotos(prev => [...prev, storageId]);
+
+        toast({
+          title: "Success",
+          description: `${file.name} uploaded successfully!`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: error.message || "Failed to upload file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const removePhoto = (index: number) => {
     setUploadedPhotos(prev => {
       const updated = prev.filter((_, i) => i !== index);
       form.setValue('photos', updated);
       return updated;
     });
-  };
-
-  const addPhotoUrl = () => {
-    if (photoUrlInput.trim()) {
-      setUploadedPhotos(prev => {
-        const updated = [...prev, photoUrlInput.trim()];
-        form.setValue('photos', updated);
-        return updated;
-      });
-      setPhotoUrlInput("");
-      toast({
-        title: "Success",
-        description: "Photo URL added successfully!",
-      });
-    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -174,6 +186,17 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Helper to get display URL for photos (handles both storage IDs and full URLs)
+  const getPhotoDisplayUrl = (photo: string) => {
+    // If it's already a full URL, use it
+    if (photo.startsWith('https://') || photo.startsWith('http://')) {
+      return photo;
+    }
+    // For storage IDs, they'll be resolved by the Convex query when displayed
+    // For preview in the form, we can't resolve them client-side, so show placeholder
+    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23e0e0e0" width="100" height="100"/><text fill="%23666" font-size="10" x="50%" y="50%" text-anchor="middle" dy=".3em">Uploaded</text></svg>';
   };
 
   return (
@@ -434,11 +457,11 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
                 {uploadedPhotos.map((photo, index) => (
                   <div key={index} className="relative group">
                     <img
-                      src={convertToPublicUrl(photo)}
+                      src={getPhotoDisplayUrl(photo)}
                       alt={`Parent dog photo ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg border"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ddd" width="100" height="100"/><text fill="%23999" font-size="12" x="50%" y="50%" text-anchor="middle" dy=".3em">No image</text></svg>';
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23e0e0e0" width="100" height="100"/><text fill="%23666" font-size="10" x="50%" y="50%" text-anchor="middle" dy=".3em">Photo %23' + (index + 1) + '</text></svg>';
                       }}
                     />
                     <button
@@ -449,39 +472,56 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
                     >
                       <X className="h-4 w-4" />
                     </button>
+                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
+                      Photo {index + 1}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Manual photo URL input */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter photo URL..."
-                value={photoUrlInput}
-                onChange={(e) => setPhotoUrlInput(e.target.value)}
-                data-testid="input-photo-url"
+            {/* File upload input */}
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="photo-upload"
+                data-testid="input-photo-upload"
               />
               <Button
                 type="button"
                 variant="outline"
-                onClick={addPhotoUrl}
-                disabled={!photoUrlInput.trim()}
-                data-testid="button-add-photo-url"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full"
+                data-testid="button-upload-photo"
               >
-                <Plus className="h-4 w-4 mr-1" /> Add
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Photos
+                  </>
+                )}
               </Button>
+              <p className="text-sm text-gray-500">
+                Select one or more photos to upload. Supported formats: JPG, PNG, GIF, WebP.
+              </p>
             </div>
-
-            <p className="text-sm text-gray-500">
-              Add photo URLs from external sources or Convex storage
-            </p>
           </div>
 
           <div className="flex gap-4 pt-6">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="flex-1"
               data-testid="button-save-parent-dog"
             >

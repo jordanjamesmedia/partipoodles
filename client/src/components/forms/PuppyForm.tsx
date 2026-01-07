@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { X, Plus, Upload, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import {
   Form,
   FormControl,
@@ -64,7 +64,9 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
   const [newLitterDamId, setNewLitterDamId] = useState('');
   const [newLitterSireId, setNewLitterSireId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [newParentId, setNewParentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch parent dogs using Convex
   const parentDogs = useConvexQuery(api.parentDogs.list) || [];
@@ -78,6 +80,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
   const createLitter = useConvexMutation(api.litters.create);
   const createPuppy = useConvexMutation(api.puppies.create);
   const updatePuppy = useConvexMutation(api.puppies.update);
+  const generateUploadUrl = useConvexMutation(api.files.generateUploadUrl);
 
   // Handle creating new parent dog
   const handleCreateParent = async (parentData: { name: string; gender: 'male' | 'female' }) => {
@@ -153,6 +156,55 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
     }
   };
 
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        // Get upload URL from Convex
+        const uploadUrl = await generateUploadUrl();
+
+        // Upload file to Convex storage
+        const response = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const { storageId } = await response.json();
+
+        // Add storage ID to photos array
+        const currentPhotos = (form.getValues("photos") as string[]) || [];
+        form.setValue("photos", [...currentPhotos, storageId]);
+
+        toast({
+          title: "Success",
+          description: `${file.name} uploaded successfully!`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: error.message || "Failed to upload file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
   // Remove photo from the list
   const removePhoto = (index: number) => {
     const currentPhotos = (form.getValues("photos") as string[]) || [];
@@ -160,10 +212,12 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
     form.setValue("photos", updatedPhotos);
   };
 
-  // Add photo URL manually
-  const addPhotoUrl = (url: string) => {
-    const currentPhotos = (form.getValues("photos") as string[]) || [];
-    form.setValue("photos", [...currentPhotos, url]);
+  // Helper to get display URL for photos
+  const getPhotoDisplayUrl = (photo: string) => {
+    if (photo.startsWith('https://') || photo.startsWith('http://')) {
+      return photo;
+    }
+    return 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23e0e0e0" width="100" height="100"/><text fill="%23666" font-size="10" x="50%" y="50%" text-anchor="middle" dy=".3em">Uploaded</text></svg>';
   };
 
   const form = useForm<PuppyFormData>({
@@ -484,7 +538,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
           />
         </div>
 
-        {/* Photo URL Section */}
+        {/* Photo Upload Section */}
         <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-800">Puppy Photos</h3>
@@ -497,11 +551,11 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                 return (
                 <div key={index} className="relative group">
                   <img
-                    src={photo}
+                    src={getPhotoDisplayUrl(photo)}
                     alt={`Puppy photo ${index + 1}`}
                     className="w-full h-32 object-cover rounded-lg border"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23ddd" width="100" height="100"/><text fill="%23999" font-size="12" x="50%" y="50%" text-anchor="middle" dy=".3em">No image</text></svg>';
+                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23e0e0e0" width="100" height="100"/><text fill="%23666" font-size="10" x="50%" y="50%" text-anchor="middle" dy=".3em">Photo</text></svg>';
                     }}
                   />
                   <button
@@ -512,35 +566,51 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                   >
                     <X className="h-4 w-4" />
                   </button>
+                  <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-2 py-0.5 rounded">
+                    Photo {index + 1}
+                  </div>
                 </div>
                 );
               })}
             </div>
           )}
 
-          {/* Manual photo URL input */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Enter photo URL..."
-              id="photo-url-input"
-              data-testid="input-photo-url"
+          {/* File upload input */}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFileUpload}
+              className="hidden"
+              id="puppy-photo-upload"
+              data-testid="input-photo-upload"
             />
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                const input = document.getElementById('photo-url-input') as HTMLInputElement;
-                if (input?.value) {
-                  addPhotoUrl(input.value);
-                  input.value = '';
-                }
-              }}
-              data-testid="button-add-photo-url"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-full"
+              data-testid="button-upload-photo"
             >
-              <Plus className="h-4 w-4 mr-1" /> Add
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Photos
+                </>
+              )}
             </Button>
+            <p className="text-xs text-gray-500">
+              Select one or more photos to upload. Supported formats: JPG, PNG, GIF, WebP.
+            </p>
           </div>
-          <p className="text-xs text-gray-500">Add photo URLs from external sources</p>
         </div>
 
         <div className="flex justify-end space-x-4">
@@ -554,7 +624,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isUploading}
             data-testid="button-save-puppy"
           >
             {isSubmitting ? 'Saving...' : (puppy ? 'Update' : 'Create')} Puppy
