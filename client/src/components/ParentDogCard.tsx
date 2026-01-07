@@ -79,10 +79,9 @@ export default function ParentDogCard({ parentDog }: ParentDogCardProps) {
     ? convertToPublicUrl(parentDog.photos[0], { width: 400, quality: 75 })
     : null;
 
-  const formatWeight = (weightInGrams: number | null) => {
-    if (!weightInGrams) return "Weight not recorded";
-    const kg = (weightInGrams / 1000).toFixed(1);
-    return `${kg} kg`;
+  const formatWeight = (weight: number | null) => {
+    if (!weight) return "Weight not recorded";
+    return `${weight.toFixed(1)} kg`;
   };
 
   const formatHeight = (heightInCm: number | null) => {
