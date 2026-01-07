@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Calendar, Crown } from "lucide-react";
+import { Edit, Calendar, Crown, Plus } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -33,24 +33,32 @@ interface ConvexParentDog {
 
 export default function ManageLitters() {
   const { toast } = useToast();
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editingLitter, setEditingLitter] = useState<ConvexLitter | null>(null);
   const [litterName, setLitterName] = useState("");
   const [litterDateOfBirth, setLitterDateOfBirth] = useState("");
-  const [litterDamId, setLitterDamId] = useState("");
-  const [litterSireId, setLitterSireId] = useState("");
+  const [litterDamId, setLitterDamId] = useState("none");
+  const [litterSireId, setLitterSireId] = useState("none");
   const [litterIsActive, setLitterIsActive] = useState(true);
 
   // Convex queries and mutations
   const littersData = useQuery(api.litters.list);
   const parentDogsData = useQuery(api.parentDogs.list);
+  const createLitter = useMutation(api.litters.create);
   const updateLitter = useMutation(api.litters.update);
 
   const litters: ConvexLitter[] = littersData ?? [];
   const parentDogs: ConvexParentDog[] = parentDogsData ?? [];
 
+  // Get female dogs for dam selection
+  const femaleDogs = parentDogs.filter(dog => dog.gender === 'female');
+  // Get male dogs for sire selection
+  const maleDogs = parentDogs.filter(dog => dog.gender === 'male');
+
   const resetForm = () => {
     setEditingLitter(null);
+    setIsEditing(false);
     setLitterName("");
     setLitterDateOfBirth("");
     setLitterDamId("none");
@@ -58,47 +66,70 @@ export default function ManageLitters() {
     setLitterIsActive(true);
   };
 
+  const openCreateDialog = () => {
+    resetForm();
+    setIsEditing(false);
+    setShowDialog(true);
+  };
+
   const openEditDialog = (litter: ConvexLitter) => {
     setEditingLitter(litter);
+    setIsEditing(true);
     setLitterName(litter.name);
     setLitterDateOfBirth(litter.date_of_birth ? new Date(litter.date_of_birth).toISOString().split('T')[0] : "");
     setLitterDamId(litter.dam_id || "none");
     setLitterSireId(litter.sire_id || "none");
     setLitterIsActive(litter.is_active ?? true);
-    setShowEditDialog(true);
+    setShowDialog(true);
   };
 
   const handleSubmit = async () => {
-    if (!editingLitter || !litterName || !litterDateOfBirth) {
+    if (!litterName || !litterDateOfBirth) {
       toast({
         title: "Error",
-        description: "Please fill in required fields",
+        description: "Please fill in Litter Name and Date of Birth",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      await updateLitter({
-        id: editingLitter._id,
-        name: litterName,
-        date_of_birth: litterDateOfBirth,
-        dam_id: litterDamId === "none" ? undefined : litterDamId,
-        sire_id: litterSireId === "none" ? undefined : litterSireId,
-        is_active: litterIsActive,
-      });
+      if (isEditing && editingLitter) {
+        // Update existing litter
+        await updateLitter({
+          id: editingLitter._id,
+          name: litterName,
+          date_of_birth: litterDateOfBirth,
+          dam_id: litterDamId === "none" ? undefined : litterDamId,
+          sire_id: litterSireId === "none" ? undefined : litterSireId,
+          is_active: litterIsActive,
+        });
+        toast({
+          title: "Success",
+          description: "Litter updated successfully",
+        });
+      } else {
+        // Create new litter
+        await createLitter({
+          name: litterName,
+          date_of_birth: litterDateOfBirth,
+          dam_id: litterDamId === "none" ? undefined : litterDamId,
+          sire_id: litterSireId === "none" ? undefined : litterSireId,
+          is_active: litterIsActive,
+        });
+        toast({
+          title: "Success",
+          description: "Litter created successfully",
+        });
+      }
 
-      setShowEditDialog(false);
+      setShowDialog(false);
       resetForm();
-      toast({
-        title: "Success",
-        description: "Litter updated successfully",
-      });
     } catch (error: any) {
-      console.error('Update error:', error);
+      console.error('Save error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update litter",
+        description: error.message || "Failed to save litter",
         variant: "destructive",
       });
     }
@@ -121,6 +152,10 @@ export default function ManageLitters() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">Puppy Portal - Litter Management</h1>
+          <Button onClick={openCreateDialog} data-testid="button-add-litter">
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Litter
+          </Button>
         </div>
 
       {litters.length === 0 ? (
@@ -129,8 +164,12 @@ export default function ManageLitters() {
             <Crown className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Litters Found</h3>
             <p className="text-gray-500 mb-4">
-              Create your first litter when adding puppies to the system.
+              Create your first litter to start managing puppies.
             </p>
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Litter
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -178,11 +217,14 @@ export default function ManageLitters() {
         </div>
       )}
 
-      {/* Edit Litter Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="z-[100]" style={{ zIndex: 100 }}>
+      {/* Create/Edit Litter Dialog */}
+      <Dialog open={showDialog} onOpenChange={(open) => {
+        setShowDialog(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="z-[200]">
           <DialogHeader>
-            <DialogTitle>Edit Litter</DialogTitle>
+            <DialogTitle>{isEditing ? "Edit Litter" : "Add New Litter"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -191,7 +233,7 @@ export default function ManageLitters() {
                 placeholder="e.g., Pippa x Po Litter, Spring 2024 Litter"
                 value={litterName}
                 onChange={(e) => setLitterName(e.target.value)}
-                data-testid="input-edit-litter-name"
+                data-testid="input-litter-name"
               />
             </div>
             <div>
@@ -200,48 +242,62 @@ export default function ManageLitters() {
                 type="date"
                 value={litterDateOfBirth}
                 onChange={(e) => setLitterDateOfBirth(e.target.value)}
-                data-testid="input-edit-litter-dob"
+                data-testid="input-litter-dob"
               />
             </div>
             <div>
               <label className="text-sm font-medium">Dam (Mother)</label>
               <Select onValueChange={setLitterDamId} value={litterDamId}>
-                <SelectTrigger data-testid="select-edit-litter-dam">
+                <SelectTrigger data-testid="select-litter-dam">
                   <SelectValue placeholder="Select dam..." />
                 </SelectTrigger>
-                <SelectContent className="z-[200]">
+                <SelectContent className="z-[300]">
                   <SelectItem value="none">None</SelectItem>
-                  {parentDogs.filter(dog => dog.gender === 'female').map((dog) => (
-                    <SelectItem key={dog._id} value={dog._id}>
-                      {dog.name}
-                    </SelectItem>
-                  ))}
+                  {femaleDogs.length === 0 ? (
+                    <SelectItem value="no-females" disabled>No female dogs available</SelectItem>
+                  ) : (
+                    femaleDogs.map((dog) => (
+                      <SelectItem key={dog._id} value={dog._id}>
+                        {dog.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {femaleDogs.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">Add female parent dogs first to select a dam</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">Sire (Father)</label>
               <Select onValueChange={setLitterSireId} value={litterSireId}>
-                <SelectTrigger data-testid="select-edit-litter-sire">
+                <SelectTrigger data-testid="select-litter-sire">
                   <SelectValue placeholder="Select sire..." />
                 </SelectTrigger>
-                <SelectContent className="z-[200]">
+                <SelectContent className="z-[300]">
                   <SelectItem value="none">None</SelectItem>
-                  {parentDogs.filter(dog => dog.gender === 'male').map((dog) => (
-                    <SelectItem key={dog._id} value={dog._id}>
-                      {dog.name}
-                    </SelectItem>
-                  ))}
+                  {maleDogs.length === 0 ? (
+                    <SelectItem value="no-males" disabled>No male dogs available</SelectItem>
+                  ) : (
+                    maleDogs.map((dog) => (
+                      <SelectItem key={dog._id} value={dog._id}>
+                        {dog.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
+              {maleDogs.length === 0 && (
+                <p className="text-xs text-orange-600 mt-1">Add male parent dogs first to select a sire</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium">Status</label>
               <Select onValueChange={(value) => setLitterIsActive(value === 'true')} value={litterIsActive.toString()}>
-                <SelectTrigger data-testid="select-edit-litter-status">
+                <SelectTrigger data-testid="select-litter-status">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="z-[200]">
+                <SelectContent className="z-[300]">
                   <SelectItem value="true">Active</SelectItem>
                   <SelectItem value="false">Inactive</SelectItem>
                 </SelectContent>
@@ -252,19 +308,19 @@ export default function ManageLitters() {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setShowEditDialog(false);
+                  setShowDialog(false);
                   resetForm();
                 }}
-                data-testid="button-cancel-edit-litter"
+                data-testid="button-cancel-litter"
               >
                 Cancel
               </Button>
               <Button
                 type="button"
                 onClick={handleSubmit}
-                data-testid="button-save-edit-litter"
+                data-testid="button-save-litter"
               >
-                Save Changes
+                {isEditing ? "Save Changes" : "Create Litter"}
               </Button>
             </div>
           </div>

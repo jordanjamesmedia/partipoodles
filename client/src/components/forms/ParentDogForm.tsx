@@ -253,7 +253,7 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="z-[300]">
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
                     </SelectContent>
@@ -314,7 +314,7 @@ export default function ParentDogForm({ parentDog, onSuccess }: ParentDogFormPro
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent className="z-[300]">
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="retired">Retired</SelectItem>
                       <SelectItem value="planned">Planned</SelectItem>

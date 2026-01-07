@@ -357,7 +357,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="z-[300]">
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
                   </SelectContent>
@@ -467,7 +467,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="z-[300]">
                     <SelectItem value="available">Available</SelectItem>
                     <SelectItem value="reserved">Reserved</SelectItem>
                     <SelectItem value="sold">Sold</SelectItem>
@@ -713,7 +713,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                 <SelectTrigger data-testid="select-new-litter-dam">
                   <SelectValue placeholder="Select dam..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[400]">
                   {parentDogs.filter((dog: any) => dog.gender === 'female').map((dog: any) => (
                     <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
@@ -742,7 +742,7 @@ export default function PuppyForm({ puppy, onClose }: PuppyFormProps) {
                 <SelectTrigger data-testid="select-new-litter-sire">
                   <SelectValue placeholder="Select sire..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[400]">
                   {parentDogs.filter((dog: any) => dog.gender === 'male').map((dog: any) => (
                     <SelectItem key={dog._id} value={dog._id}>
                       {dog.name}
