@@ -28,12 +28,12 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 // Convex data type
 interface ConvexInquiry {
   _id: Id<"inquiries">;
-  customer_name: string;
-  email: string;
+  customer_name?: string;
+  email?: string;
   phone?: string;
-  message: string;
+  message?: string;
   puppy_interest?: string;
-  status: string;
+  status?: string;
   response?: string;
   created_at?: string;
   updated_at?: string;
@@ -232,8 +232,8 @@ export default function CustomerInquiries() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className={getStatusBadgeClass(inquiry.status)} data-testid={`text-inquiry-status-${inquiry._id}`}>
-                              {getStatusLabel(inquiry.status)}
+                            <span className={getStatusBadgeClass(inquiry.status || '')} data-testid={`text-inquiry-status-${inquiry._id}`}>
+                              {getStatusLabel(inquiry.status || '')}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -363,8 +363,8 @@ export default function CustomerInquiries() {
                   <div>
                     <h3 className="font-semibold text-lg mb-3">Lead Status</h3>
                     <div className="flex items-center gap-3">
-                      <span className={getStatusBadgeClass(selectedInquiry.status)}>
-                        {getStatusLabel(selectedInquiry.status)}
+                      <span className={getStatusBadgeClass(selectedInquiry.status || '')}>
+                        {getStatusLabel(selectedInquiry.status || '')}
                       </span>
                       <div className="flex gap-2">
                         {(selectedInquiry.status === 'new' || selectedInquiry.status === 'pending') && (
