@@ -209,7 +209,7 @@ export default function ManageLitters() {
                 <SelectTrigger data-testid="select-edit-litter-dam">
                   <SelectValue placeholder="Select dam..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   <SelectItem value="none">None</SelectItem>
                   {parentDogs.filter(dog => dog.gender === 'female').map((dog) => (
                     <SelectItem key={dog._id} value={dog._id}>
@@ -225,7 +225,7 @@ export default function ManageLitters() {
                 <SelectTrigger data-testid="select-edit-litter-sire">
                   <SelectValue placeholder="Select sire..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   <SelectItem value="none">None</SelectItem>
                   {parentDogs.filter(dog => dog.gender === 'male').map((dog) => (
                     <SelectItem key={dog._id} value={dog._id}>
@@ -241,7 +241,7 @@ export default function ManageLitters() {
                 <SelectTrigger data-testid="select-edit-litter-status">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   <SelectItem value="true">Active</SelectItem>
                   <SelectItem value="false">Inactive</SelectItem>
                 </SelectContent>
