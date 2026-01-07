@@ -254,14 +254,28 @@ export default function ManageParentDogs() {
               const hasPhotos = parentDog.photos && parentDog.photos.length > 0;
               const mainPhoto = hasPhotos && parentDog.photos ? parentDog.photos[0] : null;
 
+              // Helper to get proper image URL
+              const getImageUrl = (photo: string) => {
+                if (photo.startsWith('https://') || photo.startsWith('http://')) {
+                  return photo;
+                }
+                // Fallback for unresolved storage IDs - shouldn't happen after Convex deploy
+                return `/public-objects/uploads/${photo}`;
+              };
+
               return (
                 <Card key={parentDog._id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`parent-dog-card-${parentDog._id}`}>
                   <div className="relative">
                     {hasPhotos && mainPhoto ? (
                       <img
-                        src={mainPhoto.startsWith('https://') ? mainPhoto : `/public-objects/uploads/${mainPhoto}`}
+                        src={getImageUrl(mainPhoto)}
                         alt={`${parentDog.name} - ${parentDog.color}`}
                         className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          // If image fails to load, show placeholder
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement?.querySelector('.placeholder')?.classList.remove('hidden');
+                        }}
                       />
                     ) : (
                       <div className="w-full h-48 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center justify-center">
