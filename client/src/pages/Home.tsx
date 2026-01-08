@@ -53,7 +53,7 @@ export default function Home() {
 
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
-            <span className="text-gray-900">Premium Standard</span><br />
+            <span className="text-white drop-shadow-md">Premium Standard</span><br />
             <span className="relative inline-block px-8 py-3 mt-2">
               <svg
                 className="absolute inset-0 w-full h-full scale-110"
@@ -63,25 +63,25 @@ export default function Home() {
               >
                 <path
                   d="M5 40 C10 15, 30 10, 60 22 C100 5, 150 8, 200 18 C250 10, 280 20, 295 40 C290 60, 260 72, 220 62 C170 75, 120 78, 80 65 C40 75, 15 65, 5 40 Z"
-                  fill="rgba(0,0,0,0.7)"
+                  fill="rgba(255,255,255,0.95)"
                 />
               </svg>
-              <span className="relative text-primary drop-shadow-lg">Parti Poodles</span>
+              <span className="relative text-primary">Parti Poodles</span>
             </span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-gray-800">
+          <p className="text-xl md:text-2xl mb-8 font-light text-white/90">
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/puppies">
-              <Button className="bg-primary text-white hover:bg-primary/90 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-view-puppies">
+              <Button className="bg-gray-900 text-white hover:bg-gray-800 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-view-puppies">
                 <Heart className="mr-2 h-6 w-6" />
                 View Available Puppies
               </Button>
             </Link>
             <Link href="/contact">
-              <Button className="bg-primary text-white hover:bg-primary/90 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-contact-us">
+              <Button className="bg-white text-gray-900 hover:bg-gray-100 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-contact-us">
                 <Phone className="mr-2 h-6 w-6" />
                 Contact Us
               </Button>
