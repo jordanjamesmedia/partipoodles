@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Calendar, Crown, Plus } from "lucide-react";
+import { Edit, Calendar, Crown, Plus, Trash2 } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
@@ -47,6 +47,7 @@ export default function ManageLitters() {
   const parentDogsData = useQuery(api.parentDogs.list);
   const createLitter = useMutation(api.litters.create);
   const updateLitter = useMutation(api.litters.update);
+  const deleteLitter = useMutation(api.litters.remove);
 
   const litters: ConvexLitter[] = littersData ?? [];
   const parentDogs: ConvexParentDog[] = parentDogsData ?? [];
@@ -147,6 +148,27 @@ export default function ManageLitters() {
     return sire?.name || "Unknown";
   };
 
+  const handleDelete = async (litter: ConvexLitter) => {
+    if (!confirm(`Are you sure you want to delete "${litter.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteLitter({ id: litter._id });
+      toast({
+        title: "Success",
+        description: "Litter deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete litter",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -190,15 +212,26 @@ export default function ManageLitters() {
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEditDialog(litter)}
-                  data-testid={`button-edit-litter-${litter._id}`}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditDialog(litter)}
+                    data-testid={`button-edit-litter-${litter._id}`}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(litter)}
+                    data-testid={`button-delete-litter-${litter._id}`}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 text-sm">
