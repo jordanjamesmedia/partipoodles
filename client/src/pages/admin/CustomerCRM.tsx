@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Eye, Edit, Phone } from "lucide-react";
+import { UserPlus, Eye, Edit, Phone, Trash2 } from "lucide-react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 // Convex data type
@@ -84,9 +84,31 @@ export default function CustomerCRM() {
   const customersData = useQuery(api.customers.list);
   const createCustomer = useMutation(api.customers.create);
   const updateCustomer = useMutation(api.customers.update);
+  const deleteCustomer = useMutation(api.customers.remove);
 
   const customers: ConvexCustomer[] = customersData ?? [];
   const customersLoading = customersData === undefined;
+
+  const handleDelete = async (customer: ConvexCustomer) => {
+    if (!confirm(`Are you sure you want to delete "${customer.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteCustomer({ id: customer._id });
+      toast({
+        title: "Success",
+        description: "Customer deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete customer",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleFormClose = () => {
     setIsFormOpen(false);
@@ -272,7 +294,7 @@ export default function CustomerCRM() {
                       <SelectTrigger data-testid="select-customer-status">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]">
                         <SelectItem value="prospective">Prospective</SelectItem>
                         <SelectItem value="current">Current</SelectItem>
                         <SelectItem value="past">Past</SelectItem>
@@ -394,6 +416,14 @@ export default function CustomerCRM() {
                                 data-testid={`button-edit-customer-${customer._id}`}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(customer)}
+                                data-testid={`button-delete-customer-${customer._id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>

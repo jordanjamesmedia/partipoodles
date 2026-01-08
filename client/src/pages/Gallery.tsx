@@ -673,7 +673,7 @@ export default function Gallery() {
       {/* Custom Lightbox */}
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center"
           onClick={closeLightbox}
         >
           {/* Dark backdrop */}
@@ -695,7 +695,7 @@ export default function Gallery() {
                 e.stopPropagation();
                 goToPrevious();
               }}
-              className="absolute left-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
               data-testid="lightbox-prev"
             >
               <ChevronLeft className="h-6 w-6" />
@@ -708,38 +708,38 @@ export default function Gallery() {
                 e.stopPropagation();
                 goToNext();
               }}
-              className="absolute right-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
               data-testid="lightbox-next"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           )}
 
+          {/* Loading spinner - centered on screen */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
+            </div>
+          )}
+
           {/* Image container */}
           <div
-            className="relative z-10 flex flex-col items-center justify-center max-w-[95vw] max-h-[95vh] px-4"
+            className="relative z-10 flex flex-col items-center justify-center w-full h-full p-4 md:p-8"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Loading spinner */}
-            {!imageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
-              </div>
-            )}
-
             {/* Main image */}
             <img
               src={convertToPublicUrl(getImageUrl(selectedPhoto), { compress: false })}
               alt={selectedPhoto.caption || "Gallery photo"}
-              className={`max-w-full max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              className={`max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setImageLoaded(true)}
               draggable={false}
             />
 
             {/* Caption */}
             {selectedPhoto.caption && imageLoaded && (
-              <div className="mt-4 px-6 py-3 bg-black/50 backdrop-blur-sm rounded-full">
-                <p className="text-white text-center font-medium text-sm md:text-base">{selectedPhoto.caption}</p>
+              <div className="mt-4 px-6 py-3 bg-black/50 backdrop-blur-sm rounded-full max-w-[90vw]">
+                <p className="text-white text-center font-medium text-sm md:text-base truncate">{selectedPhoto.caption}</p>
               </div>
             )}
 
