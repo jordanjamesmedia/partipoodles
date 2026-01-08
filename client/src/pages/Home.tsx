@@ -40,7 +40,18 @@ export default function Home() {
       <Navigation />
       
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center hero-bg">
+      <section
+        className="relative h-screen flex items-center justify-center"
+        style={{
+          backgroundImage: `url(${familyPoodleImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/70"></div>
+
         {/* Animated dog paw print icons - subtle and random */}
         <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-1 opacity-0 w-6 h-6 rotate-12" />
         <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-2 opacity-0 w-4 h-4 -rotate-45" />
