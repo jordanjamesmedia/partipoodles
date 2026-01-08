@@ -120,8 +120,9 @@ export default function PhotoGallery() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch all photos from Convex
-  const allPhotos = useQuery(api.galleryPhotos.list) ?? [];
-  const photosLoading = allPhotos === undefined;
+  const photosQuery = useQuery(api.galleryPhotos.list);
+  const photosLoading = photosQuery === undefined;
+  const allPhotos = photosQuery ?? [];
 
   // Convex mutations
   const updatePhoto = useMutation(api.galleryPhotos.update);
