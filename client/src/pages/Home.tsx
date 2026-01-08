@@ -48,6 +48,21 @@ export default function Home() {
           }}></div>
         </div>
 
+        {/* Large decorative paw print */}
+        <svg
+          className="absolute -bottom-20 -right-20 w-96 h-96 text-primary opacity-20 rotate-[-15deg]"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="4" r="2.5"/>
+          <circle cx="5" cy="9" r="2.5"/>
+          <circle cx="19" cy="9" r="2.5"/>
+          <circle cx="8" cy="14" r="2"/>
+          <circle cx="16" cy="14" r="2"/>
+          <ellipse cx="12" cy="20" rx="5" ry="4"/>
+        </svg>
+
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
             <span className="text-gray-800">Premium Standard</span><br />
