@@ -54,7 +54,21 @@ export default function Home() {
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight text-white drop-shadow-md">
             Premium Standard<br />
-            <span className="text-white">Parti Poodles</span>
+            <span className="relative inline-block">
+              <svg
+                className="absolute -inset-x-4 -inset-y-2 w-[calc(100%+2rem)] h-[calc(100%+1rem)]"
+                viewBox="0 0 200 60"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 35 Q15 15, 40 20 Q80 8, 120 18 Q160 10, 185 25 Q195 35, 188 42 Q170 55, 130 48 Q90 58, 50 45 Q20 52, 10 42 Q5 38, 8 35"
+                  fill="white"
+                  opacity="0.95"
+                />
+              </svg>
+              <span className="relative text-primary">Parti Poodles</span>
+            </span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 font-light text-white/95">
             Discover the joy and elegance of Standard Parti Poodles.<br />
