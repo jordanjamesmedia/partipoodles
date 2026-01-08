@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette } from "lucide-react";
 import familyPoodleImage from "@assets/1_1754364343232.png";
+import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 
 export default function Home() {
   const puppiesData = useQuery(api.puppies.list);
@@ -41,46 +42,29 @@ export default function Home() {
       {/* Hero Section - Clean cream background with subtle paw pattern */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#e8ddd0]">
         {/* Subtle paw print pattern */}
-        <div className="absolute inset-0 opacity-[0.06]">
+        <div className="absolute inset-0 opacity-[0.05]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' fill='%23a0785c'%3E%3Cpath d='M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55'/%3E%3Cellipse cx='30' cy='38' rx='10' ry='12'/%3E%3Cellipse cx='50' cy='30' rx='9' ry='11'/%3E%3Cellipse cx='70' cy='38' rx='10' ry='12'/%3E%3Cellipse cx='42' cy='48' rx='7' ry='9'/%3E%3Cellipse cx='58' cy='48' rx='7' ry='9'/%3E%3C/svg%3E")`,
+            backgroundImage: `url(${pawPrintImage})`,
             backgroundSize: '80px 80px',
+            backgroundRepeat: 'repeat',
           }}></div>
         </div>
 
         {/* Large decorative paw print - top left */}
-        <svg
-          className="absolute -top-16 -left-16 w-80 h-80 text-primary opacity-15 rotate-[25deg]"
-          viewBox="0 0 100 100"
-          fill="currentColor"
+        <img
+          src={pawPrintImage}
+          alt=""
+          className="absolute -top-10 -left-10 w-72 h-72 opacity-20 rotate-[25deg]"
           aria-hidden="true"
-        >
-          {/* Main pad (metacarpal pad) */}
-          <path d="M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55" />
-          {/* Toe pads (digital pads) */}
-          <ellipse cx="30" cy="38" rx="10" ry="12" />
-          <ellipse cx="50" cy="30" rx="9" ry="11" />
-          <ellipse cx="70" cy="38" rx="10" ry="12" />
-          <ellipse cx="42" cy="48" rx="7" ry="9" />
-          <ellipse cx="58" cy="48" rx="7" ry="9" />
-        </svg>
+        />
 
         {/* Large decorative paw print - bottom right */}
-        <svg
-          className="absolute -bottom-20 -right-20 w-96 h-96 text-primary opacity-20 rotate-[-15deg]"
-          viewBox="0 0 100 100"
-          fill="currentColor"
+        <img
+          src={pawPrintImage}
+          alt=""
+          className="absolute -bottom-16 -right-16 w-80 h-80 opacity-25 rotate-[-15deg]"
           aria-hidden="true"
-        >
-          {/* Main pad (metacarpal pad) */}
-          <path d="M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55" />
-          {/* Toe pads (digital pads) */}
-          <ellipse cx="30" cy="38" rx="10" ry="12" />
-          <ellipse cx="50" cy="30" rx="9" ry="11" />
-          <ellipse cx="70" cy="38" rx="10" ry="12" />
-          <ellipse cx="42" cy="48" rx="7" ry="9" />
-          <ellipse cx="58" cy="48" rx="7" ry="9" />
-        </svg>
+        />
 
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
