@@ -54,20 +54,19 @@ export default function Home() {
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight text-white drop-shadow-md">
             Premium Standard<br />
-            <span className="relative inline-block">
+            <span className="relative inline-block px-4 py-1">
               <svg
-                className="absolute -inset-x-4 -inset-y-2 w-[calc(100%+2rem)] h-[calc(100%+1rem)]"
-                viewBox="0 0 200 60"
+                className="absolute inset-0 w-full h-full"
+                viewBox="0 0 300 80"
                 preserveAspectRatio="none"
                 aria-hidden="true"
               >
                 <path
-                  d="M8 35 Q15 15, 40 20 Q80 8, 120 18 Q160 10, 185 25 Q195 35, 188 42 Q170 55, 130 48 Q90 58, 50 45 Q20 52, 10 42 Q5 38, 8 35"
-                  fill="white"
-                  opacity="0.95"
+                  d="M5 40 C10 20, 30 15, 60 25 C100 10, 150 12, 200 20 C250 15, 280 25, 295 40 C290 55, 260 65, 220 58 C170 68, 120 70, 80 60 C40 68, 15 60, 5 40 Z"
+                  fill="rgba(0,0,0,0.6)"
                 />
               </svg>
-              <span className="relative text-primary">Parti Poodles</span>
+              <span className="relative text-amber-400 drop-shadow-lg">Parti Poodles</span>
             </span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 font-light text-white/95">
