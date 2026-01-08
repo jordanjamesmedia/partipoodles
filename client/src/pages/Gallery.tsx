@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Eye, X, Upload, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import OrientationFixedImage from "@/components/OrientationFixedImage";
+import LazyImage from "@/components/LazyImage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -605,28 +605,28 @@ export default function Gallery() {
               ))}
             </div>
           ) : photos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {photos.map((photo, index) => (
                 <div
                   key={photo._id}
                   className="group relative aspect-square rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => {
-                    setImageLoaded(false);
-                    setSelectedPhotoIndex(index);
-                  }}
                   data-testid={`gallery-photo-${photo._id}`}
                 >
-                  <OrientationFixedImage
-                    src={convertToPublicUrl(getImageUrl(photo), { width: 400, quality: 65, compress: true })}
+                  <LazyImage
+                    src={convertToPublicUrl(getImageUrl(photo), { width: 300, quality: 50, compress: true })}
                     alt={photo.caption || "Gallery photo"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    placeholderClassName="w-full h-full"
+                    onClick={() => {
+                      setImageLoaded(false);
+                      setSelectedPhotoIndex(index);
+                    }}
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center pointer-events-none">
                     <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                   {photo.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pointer-events-none">
                       <p className="text-white text-sm font-medium truncate">{photo.caption}</p>
                     </div>
                   )}

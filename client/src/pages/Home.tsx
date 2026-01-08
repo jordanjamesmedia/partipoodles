@@ -45,7 +45,7 @@ export default function Home() {
         style={{
           backgroundImage: `url(${familyPoodleImage})`,
           backgroundSize: 'cover',
-          backgroundPosition: 'center top',
+          backgroundPosition: 'center 20%',
           backgroundRepeat: 'no-repeat',
         }}
       >
