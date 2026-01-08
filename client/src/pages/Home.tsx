@@ -41,7 +41,7 @@ export default function Home() {
       
       {/* Hero Section */}
       <section
-        className="relative h-screen flex items-center justify-center"
+        className="relative h-screen flex items-center justify-center overflow-hidden"
         style={{
           backgroundImage: `url(${familyPoodleImage})`,
           backgroundSize: 'cover',
@@ -49,34 +49,49 @@ export default function Home() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/70"></div>
+        {/* Strong overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/75 to-white/85"></div>
+
+        {/* Subtle paw print pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `url(${pawPrintImage})`,
+            backgroundSize: '60px 60px',
+            backgroundRepeat: 'repeat',
+          }}
+        ></div>
+
+        {/* Decorative circles for family-friendly feel */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-40 right-20 w-40 h-40 bg-secondary/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/3 right-10 w-24 h-24 bg-accent/10 rounded-full blur-2xl"></div>
 
         {/* Animated dog paw print icons - subtle and random */}
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-1 opacity-0 w-6 h-6 rotate-12" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-2 opacity-0 w-4 h-4 -rotate-45" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-3 opacity-0 w-5 h-5 rotate-90" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-4 opacity-0 w-7 h-7 -rotate-12" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-5 opacity-0 w-3 h-3 rotate-45" />
-        
+        <img src={pawPrintImage} alt="" className="absolute paw-print paw-print-1 opacity-0 w-6 h-6 rotate-12" aria-hidden="true" />
+        <img src={pawPrintImage} alt="" className="absolute paw-print paw-print-2 opacity-0 w-4 h-4 -rotate-45" aria-hidden="true" />
+        <img src={pawPrintImage} alt="" className="absolute paw-print paw-print-3 opacity-0 w-5 h-5 rotate-90" aria-hidden="true" />
+        <img src={pawPrintImage} alt="" className="absolute paw-print paw-print-4 opacity-0 w-7 h-7 -rotate-12" aria-hidden="true" />
+        <img src={pawPrintImage} alt="" className="absolute paw-print paw-print-5 opacity-0 w-3 h-3 rotate-45" aria-hidden="true" />
+
         <div className="relative z-10 text-center text-gray-800 max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight drop-shadow-sm">
             Premium Standard<br />
             <span className="text-primary">Parti Poodles</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-gray-600">
+          <p className="text-xl md:text-2xl mb-8 font-light text-gray-700">
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/puppies">
-              <Button className="btn-primary" data-testid="button-view-puppies">
+              <Button className="btn-primary shadow-lg" data-testid="button-view-puppies">
                 <Heart className="mr-2 h-6 w-6" />
                 View Available Puppies
               </Button>
             </Link>
             <Link href="/contact">
-              <Button className="btn-secondary" data-testid="button-contact-us">
+              <Button className="btn-secondary shadow-lg" data-testid="button-contact-us">
                 <Phone className="mr-2 h-6 w-6" />
                 Contact Us
               </Button>

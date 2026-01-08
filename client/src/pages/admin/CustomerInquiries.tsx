@@ -21,8 +21,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Trash2, Eye, Phone, Mail, MessageSquare, RotateCcw } from "lucide-react";
+import { Check, Trash2, Eye, Phone, Mail, MessageSquare, RotateCcw, Filter } from "lucide-react";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 // Convex data type
@@ -44,6 +51,7 @@ export default function CustomerInquiries() {
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedInquiry, setSelectedInquiry] = useState<ConvexInquiry | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -67,6 +75,21 @@ export default function CustomerInquiries() {
 
   const inquiries: ConvexInquiry[] = inquiriesData ?? [];
   const inquiriesLoading = inquiriesData === undefined;
+
+  // Filter inquiries based on status
+  const filteredInquiries = inquiries.filter((inquiry) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "new") return inquiry.status === "new" || inquiry.status === "pending" || !inquiry.status;
+    return inquiry.status === statusFilter;
+  });
+
+  // Count by status for filter badges
+  const statusCounts = {
+    all: inquiries.length,
+    new: inquiries.filter(i => i.status === "new" || i.status === "pending" || !i.status).length,
+    responded: inquiries.filter(i => i.status === "responded").length,
+    resolved: inquiries.filter(i => i.status === "resolved").length,
+  };
 
   const handleViewDetails = (inquiry: ConvexInquiry) => {
     setSelectedInquiry(inquiry);
@@ -162,7 +185,46 @@ export default function CustomerInquiries() {
 
           <Card>
             <CardHeader>
-              <CardTitle>All Inquiries</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardTitle>Customer Inquiries</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-500" />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={statusFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("all")}
+                      className="text-xs"
+                    >
+                      All ({statusCounts.all})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "new" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("new")}
+                      className={`text-xs ${statusFilter !== "new" && statusCounts.new > 0 ? "border-yellow-400 text-yellow-700" : ""}`}
+                    >
+                      New Leads ({statusCounts.new})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "responded" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("responded")}
+                      className="text-xs"
+                    >
+                      Contacted ({statusCounts.responded})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "resolved" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("resolved")}
+                      className="text-xs"
+                    >
+                      Closed ({statusCounts.resolved})
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {inquiriesLoading ? (
@@ -183,7 +245,7 @@ export default function CustomerInquiries() {
                     </div>
                   ))}
                 </div>
-              ) : inquiries.length > 0 ? (
+              ) : filteredInquiries.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -197,7 +259,7 @@ export default function CustomerInquiries() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {inquiries.map((inquiry) => (
+                      {filteredInquiries.map((inquiry) => (
                         <TableRow key={inquiry._id}>
                           <TableCell data-testid={`text-inquiry-date-${inquiry._id}`}>
                             {inquiry.created_at ? new Date(inquiry.created_at).toLocaleDateString() : '-'}
@@ -297,7 +359,20 @@ export default function CustomerInquiries() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No inquiries found</p>
+                  <p className="text-gray-500">
+                    {statusFilter === "all"
+                      ? "No inquiries found"
+                      : `No ${statusFilter === "new" ? "new" : statusFilter} inquiries found`}
+                  </p>
+                  {statusFilter !== "all" && (
+                    <Button
+                      variant="link"
+                      onClick={() => setStatusFilter("all")}
+                      className="mt-2"
+                    >
+                      View all inquiries
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
