@@ -38,50 +38,34 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-light">
       <Navigation />
       
-      {/* Hero Section - Clean solid brand color with paw pattern */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
-        {/* Paw print pattern - slightly darker */}
-        <div className="absolute inset-0 opacity-[0.12]">
+      {/* Hero Section - Clean cream background with subtle paw pattern */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f5ebe0]">
+        {/* Subtle paw print pattern */}
+        <div className="absolute inset-0 opacity-[0.08]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5'%3E%3Cpath d='M11 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M4 9c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M16 9c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M9 14c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M12 17c-1.5 0-3 1-3 3 0 1 .5 2 1.5 2.5.5.3 1 .5 1.5.5s1-.2 1.5-.5c1-.5 1.5-1.5 1.5-2.5 0-2-1.5-3-3-3z'/%3E%3C/svg%3E")`,
-            backgroundSize: '80px 80px',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='%23a0785c' stroke='none'%3E%3Ccircle cx='12' cy='4' r='2'/%3E%3Ccircle cx='6' cy='9' r='2'/%3E%3Ccircle cx='18' cy='9' r='2'/%3E%3Ccircle cx='9' cy='14' r='1.5'/%3E%3Ccircle cx='15' cy='14' r='1.5'/%3E%3Cellipse cx='12' cy='19' rx='4' ry='3'/%3E%3C/svg%3E")`,
+            backgroundSize: '100px 100px',
           }}></div>
         </div>
 
-        {/* Subtle gradient overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/15"></div>
-
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight text-gray-900 drop-shadow-sm">
-            Premium Standard<br />
-            <span className="relative inline-block px-8 py-3 mt-2">
-              <svg
-                className="absolute inset-0 w-full h-full scale-110"
-                viewBox="0 0 300 80"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M5 40 C10 15, 30 10, 60 22 C100 5, 150 8, 200 18 C250 10, 280 20, 295 40 C290 60, 260 72, 220 62 C170 75, 120 78, 80 65 C40 75, 15 65, 5 40 Z"
-                  fill="rgba(0,0,0,0.7)"
-                />
-              </svg>
-              <span className="relative text-primary drop-shadow-lg">Parti Poodles</span>
-            </span>
+          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
+            <span className="text-gray-800">Premium Standard</span><br />
+            <span className="text-primary">Parti Poodles</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-gray-800">
+          <p className="text-xl md:text-2xl mb-8 font-light text-gray-600">
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/puppies">
-              <Button className="bg-gray-900 text-white hover:bg-gray-800 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-view-puppies">
+              <Button className="bg-primary text-white hover:bg-primary/90 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-view-puppies">
                 <Heart className="mr-2 h-6 w-6" />
                 View Available Puppies
               </Button>
             </Link>
             <Link href="/contact">
-              <Button className="bg-white text-gray-900 hover:bg-gray-100 shadow-lg px-8 py-6 text-lg font-semibold border-2 border-gray-900" data-testid="button-contact-us">
+              <Button className="bg-primary text-white hover:bg-primary/90 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-contact-us">
                 <Phone className="mr-2 h-6 w-6" />
                 Contact Us
               </Button>
