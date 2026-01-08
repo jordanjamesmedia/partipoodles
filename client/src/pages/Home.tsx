@@ -38,22 +38,38 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-light">
       <Navigation />
       
-      {/* Hero Section - Clean cream background with subtle paw pattern */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f5ebe0]">
+      {/* Hero Section - Brand orange background with paw pattern */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
         {/* Subtle paw print pattern */}
-        <div className="absolute inset-0 opacity-[0.08]">
+        <div className="absolute inset-0 opacity-[0.12]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='%23a0785c' stroke='none'%3E%3Ccircle cx='12' cy='4' r='2'/%3E%3Ccircle cx='6' cy='9' r='2'/%3E%3Ccircle cx='18' cy='9' r='2'/%3E%3Ccircle cx='9' cy='14' r='1.5'/%3E%3Ccircle cx='15' cy='14' r='1.5'/%3E%3Cellipse cx='12' cy='19' rx='4' ry='3'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='%23ffffff' stroke='none'%3E%3Ccircle cx='12' cy='4' r='2'/%3E%3Ccircle cx='6' cy='9' r='2'/%3E%3Ccircle cx='18' cy='9' r='2'/%3E%3Ccircle cx='9' cy='14' r='1.5'/%3E%3Ccircle cx='15' cy='14' r='1.5'/%3E%3Cellipse cx='12' cy='19' rx='4' ry='3'/%3E%3C/svg%3E")`,
             backgroundSize: '100px 100px',
           }}></div>
         </div>
 
+        {/* Subtle gradient for depth */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/10"></div>
+
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
-            <span className="text-gray-800">Premium Standard</span><br />
-            <span className="text-primary">Parti Poodles</span>
+            <span className="text-gray-900">Premium Standard</span><br />
+            <span className="relative inline-block px-8 py-3 mt-2">
+              <svg
+                className="absolute inset-0 w-full h-full scale-110"
+                viewBox="0 0 300 80"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M5 40 C10 15, 30 10, 60 22 C100 5, 150 8, 200 18 C250 10, 280 20, 295 40 C290 60, 260 72, 220 62 C170 75, 120 78, 80 65 C40 75, 15 65, 5 40 Z"
+                  fill="rgba(0,0,0,0.7)"
+                />
+              </svg>
+              <span className="relative text-primary drop-shadow-lg">Parti Poodles</span>
+            </span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-gray-600">
+          <p className="text-xl md:text-2xl mb-8 font-light text-gray-800">
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
