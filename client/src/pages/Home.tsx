@@ -39,7 +39,7 @@ export default function Home() {
       <Navigation />
       
       {/* Hero Section - Clean cream background with subtle paw pattern */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f5ebe0]">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#e8ddd0]">
         {/* Subtle paw print pattern */}
         <div className="absolute inset-0 opacity-[0.06]">
           <div className="absolute inset-0" style={{
@@ -48,7 +48,22 @@ export default function Home() {
           }}></div>
         </div>
 
-        {/* Large decorative paw print */}
+        {/* Large decorative paw print - top left */}
+        <svg
+          className="absolute -top-16 -left-16 w-80 h-80 text-primary opacity-15 rotate-[25deg]"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="4" r="2.5"/>
+          <circle cx="5" cy="9" r="2.5"/>
+          <circle cx="19" cy="9" r="2.5"/>
+          <circle cx="8" cy="14" r="2"/>
+          <circle cx="16" cy="14" r="2"/>
+          <ellipse cx="12" cy="20" rx="5" ry="4"/>
+        </svg>
+
+        {/* Large decorative paw print - bottom right */}
         <svg
           className="absolute -bottom-20 -right-20 w-96 h-96 text-primary opacity-20 rotate-[-15deg]"
           viewBox="0 0 24 24"
