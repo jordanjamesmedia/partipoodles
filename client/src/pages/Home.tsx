@@ -5,7 +5,7 @@ import Footer from "@/components/Footer";
 import PuppyCard from "@/components/PuppyCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette } from "lucide-react";
+import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette, PawPrint } from "lucide-react";
 import familyPoodleImage from "@assets/1_1754364343232.png";
 
 export default function Home() {
@@ -38,37 +38,48 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-light">
       <Navigation />
       
-      {/* Hero Section */}
-      <section
-        className="relative h-screen flex items-center justify-center overflow-hidden"
-        style={{
-          backgroundImage: `url(${familyPoodleImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 20%',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        {/* Strong dark overlay for excellent text contrast */}
-        <div className="absolute inset-0 bg-black/65"></div>
+      {/* Hero Section - Clean solid brand color with subtle pattern */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-primary">
+        {/* Subtle paw print pattern */}
+        <div className="absolute inset-0 opacity-[0.06]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5'%3E%3Cpath d='M11 4c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M4 9c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M16 9c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M9 14c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z'/%3E%3Cpath d='M12 17c-1.5 0-3 1-3 3 0 1 .5 2 1.5 2.5.5.3 1 .5 1.5.5s1-.2 1.5-.5c1-.5 1.5-1.5 1.5-2.5 0-2-1.5-3-3-3z'/%3E%3C/svg%3E")`,
+            backgroundSize: '80px 80px',
+          }}></div>
+        </div>
 
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
+        {/* Gradient overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-black/20"></div>
+
+        {/* Optional: Decorative dog image on the side */}
+        <div className="absolute right-0 bottom-0 w-1/2 h-full opacity-20 hidden lg:block">
+          <img
+            src={familyPoodleImage}
+            alt=""
+            className="w-full h-full object-cover object-left"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-transparent"></div>
+        </div>
+
+        <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight text-white drop-shadow-md">
             Premium Standard<br />
-            <span className="text-amber-400">Parti Poodles</span>
+            <span className="text-amber-200">Parti Poodles</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-white" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
+          <p className="text-xl md:text-2xl mb-8 font-light text-white/95">
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/puppies">
-              <Button className="btn-primary shadow-lg" data-testid="button-view-puppies">
+              <Button className="bg-white text-primary hover:bg-amber-50 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-view-puppies">
                 <Heart className="mr-2 h-6 w-6" />
                 View Available Puppies
               </Button>
             </Link>
             <Link href="/contact">
-              <Button className="btn-secondary shadow-lg" data-testid="button-contact-us">
+              <Button variant="outline" className="border-2 border-white text-white hover:bg-white/10 shadow-lg px-8 py-6 text-lg font-semibold" data-testid="button-contact-us">
                 <Phone className="mr-2 h-6 w-6" />
                 Contact Us
               </Button>
