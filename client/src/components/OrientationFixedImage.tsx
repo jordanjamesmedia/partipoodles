@@ -1,5 +1,4 @@
-import { useState, useEffect, forwardRef } from "react";
-import exifr from "exifr";
+import { useState, useEffect, forwardRef, useCallback } from "react";
 
 interface OrientationFixedImageProps {
   src: string;
@@ -10,6 +9,16 @@ interface OrientationFixedImageProps {
   loading?: "lazy" | "eager";
   [key: string]: any;
 }
+
+// Cache for EXIF orientation results to avoid re-fetching
+const orientationCache = new Map<string, number>();
+
+// Check if URL is from Convex storage (already properly oriented)
+const isConvexStorageUrl = (url: string): boolean => {
+  return url.includes('convex.cloud') ||
+         url.includes('convex.site') ||
+         url.includes('confident-ocelot');
+};
 
 // Map EXIF orientation values to CSS transforms
 const getTransformFromOrientation = (orientation: number): string => {
@@ -44,38 +53,71 @@ const OrientationFixedImage = forwardRef<HTMLImageElement, OrientationFixedImage
   ...props
 }, ref) => {
   const [orientation, setOrientation] = useState<number>(1);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
-    // Only try to read EXIF data for actual image URLs, not data URLs
-    if (src && !src.startsWith("data:") && !src.includes("blob:")) {
-      // Read EXIF orientation data
+    // Skip EXIF reading for:
+    // 1. Data URLs and blob URLs
+    // 2. Convex storage URLs (already properly oriented by the server)
+    // 3. URLs with compression parameters (already processed)
+    if (!src ||
+        src.startsWith("data:") ||
+        src.includes("blob:") ||
+        isConvexStorageUrl(src) ||
+        src.includes('compress=')) {
+      setOrientation(1);
+      return;
+    }
+
+    // Check cache first
+    if (orientationCache.has(src)) {
+      setOrientation(orientationCache.get(src)!);
+      return;
+    }
+
+    // Only read EXIF for local/non-processed images (lazy load the exifr library)
+    let cancelled = false;
+
+    import("exifr").then(({ default: exifr }) => {
+      if (cancelled) return;
+
       exifr.orientation(src)
         .then((orientationValue) => {
-          if (orientationValue && typeof orientationValue === "number") {
-            setOrientation(orientationValue);
-          }
+          if (cancelled) return;
+          const value = (orientationValue && typeof orientationValue === "number") ? orientationValue : 1;
+          orientationCache.set(src, value);
+          setOrientation(value);
         })
-        .catch((error) => {
-          // Silently fail - EXIF data may have been stripped during server processing
-          // The server should handle orientation correction automatically
+        .catch(() => {
+          // Silently fail - EXIF data may have been stripped
+          if (!cancelled) {
+            orientationCache.set(src, 1);
+            setOrientation(1);
+          }
         });
-    }
+    }).catch(() => {
+      // Library load failed, use default orientation
+      if (!cancelled) {
+        setOrientation(1);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
 
   const transform = getTransformFromOrientation(orientation);
-  
+
   const imageStyle: React.CSSProperties = {
     ...style,
     transform: transform || style.transform,
   };
 
-  const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setImageLoaded(true);
+  const handleLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     if (onLoad) {
       onLoad(e);
     }
-  };
+  }, [onLoad]);
 
   return (
     <img
