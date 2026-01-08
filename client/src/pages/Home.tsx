@@ -48,18 +48,15 @@ export default function Home() {
           backgroundRepeat: 'no-repeat',
         }}
       >
-        {/* Clean gradient overlay - dark at edges for text, lighter in center to show image */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-black/70"></div>
-
-        {/* Subtle warm tint overlay for brand consistency */}
-        <div className="absolute inset-0 bg-amber-900/20 mix-blend-overlay"></div>
+        {/* Strong dark overlay for excellent text contrast */}
+        <div className="absolute inset-0 bg-black/65"></div>
 
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight drop-shadow-lg">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
             Premium Standard<br />
-            <span className="text-primary">Parti Poodles</span>
+            <span className="text-amber-400">Parti Poodles</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 font-light text-white/95">
+          <p className="text-xl md:text-2xl mb-8 font-light text-white" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
             Discover the joy and elegance of Standard Parti Poodles.<br />
             Raised with love and care in the heart of Victoria.
           </p>
