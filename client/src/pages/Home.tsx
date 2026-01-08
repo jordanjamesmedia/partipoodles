@@ -43,39 +43,43 @@ export default function Home() {
         {/* Subtle paw print pattern */}
         <div className="absolute inset-0 opacity-[0.06]">
           <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 24 24' fill='%23a0785c' stroke='none'%3E%3Ccircle cx='12' cy='4' r='2'/%3E%3Ccircle cx='6' cy='9' r='2'/%3E%3Ccircle cx='18' cy='9' r='2'/%3E%3Ccircle cx='9' cy='14' r='1.5'/%3E%3Ccircle cx='15' cy='14' r='1.5'/%3E%3Cellipse cx='12' cy='19' rx='4' ry='3'/%3E%3C/svg%3E")`,
-            backgroundSize: '100px 100px',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100' fill='%23a0785c'%3E%3Cpath d='M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55'/%3E%3Cellipse cx='30' cy='38' rx='10' ry='12'/%3E%3Cellipse cx='50' cy='30' rx='9' ry='11'/%3E%3Cellipse cx='70' cy='38' rx='10' ry='12'/%3E%3Cellipse cx='42' cy='48' rx='7' ry='9'/%3E%3Cellipse cx='58' cy='48' rx='7' ry='9'/%3E%3C/svg%3E")`,
+            backgroundSize: '80px 80px',
           }}></div>
         </div>
 
         {/* Large decorative paw print - top left */}
         <svg
           className="absolute -top-16 -left-16 w-80 h-80 text-primary opacity-15 rotate-[25deg]"
-          viewBox="0 0 24 24"
+          viewBox="0 0 100 100"
           fill="currentColor"
           aria-hidden="true"
         >
-          <circle cx="12" cy="4" r="2.5"/>
-          <circle cx="5" cy="9" r="2.5"/>
-          <circle cx="19" cy="9" r="2.5"/>
-          <circle cx="8" cy="14" r="2"/>
-          <circle cx="16" cy="14" r="2"/>
-          <ellipse cx="12" cy="20" rx="5" ry="4"/>
+          {/* Main pad (metacarpal pad) */}
+          <path d="M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55" />
+          {/* Toe pads (digital pads) */}
+          <ellipse cx="30" cy="38" rx="10" ry="12" />
+          <ellipse cx="50" cy="30" rx="9" ry="11" />
+          <ellipse cx="70" cy="38" rx="10" ry="12" />
+          <ellipse cx="42" cy="48" rx="7" ry="9" />
+          <ellipse cx="58" cy="48" rx="7" ry="9" />
         </svg>
 
         {/* Large decorative paw print - bottom right */}
         <svg
           className="absolute -bottom-20 -right-20 w-96 h-96 text-primary opacity-20 rotate-[-15deg]"
-          viewBox="0 0 24 24"
+          viewBox="0 0 100 100"
           fill="currentColor"
           aria-hidden="true"
         >
-          <circle cx="12" cy="4" r="2.5"/>
-          <circle cx="5" cy="9" r="2.5"/>
-          <circle cx="19" cy="9" r="2.5"/>
-          <circle cx="8" cy="14" r="2"/>
-          <circle cx="16" cy="14" r="2"/>
-          <ellipse cx="12" cy="20" rx="5" ry="4"/>
+          {/* Main pad (metacarpal pad) */}
+          <path d="M50 55 C35 55, 25 65, 25 78 C25 90, 35 95, 50 95 C65 95, 75 90, 75 78 C75 65, 65 55, 50 55" />
+          {/* Toe pads (digital pads) */}
+          <ellipse cx="30" cy="38" rx="10" ry="12" />
+          <ellipse cx="50" cy="30" rx="9" ry="11" />
+          <ellipse cx="70" cy="38" rx="10" ry="12" />
+          <ellipse cx="42" cy="48" rx="7" ry="9" />
+          <ellipse cx="58" cy="48" rx="7" ry="9" />
         </svg>
 
         <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
