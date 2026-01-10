@@ -8,8 +8,15 @@ import { Link } from "wouter";
 import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette } from "lucide-react";
 import familyPoodleImage from "@assets/1_1754364343232.png";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Home() {
+  useSEO({
+    title: 'Parti Poodles Australia - Premium Standard Parti Poodle Breeders',
+    description: 'Parti Poodles Australia - Ethical breeders of beautiful, healthy standard parti poodles in Victoria. View our available puppies and learn about our breeding program.',
+    canonical: '/'
+  });
+
   const puppiesData = useQuery(api.puppies.list);
   const littersData = useQuery(api.litters.list);
   

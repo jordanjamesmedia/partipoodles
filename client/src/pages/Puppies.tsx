@@ -4,8 +4,15 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import PuppyCard from "@/components/PuppyCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Puppies() {
+  useSEO({
+    title: 'Available Puppies - Standard Parti Poodle Puppies For Sale',
+    description: 'View our available Standard Parti Poodle puppies. Health tested, vaccinated, and raised with love in Victoria, Australia. Find your perfect family companion.',
+    canonical: '/puppies'
+  });
+
   const puppiesData = useQuery(api.puppies.list);
   const littersData = useQuery(api.litters.list);
   

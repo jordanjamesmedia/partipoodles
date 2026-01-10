@@ -5,8 +5,15 @@ import Footer from "@/components/Footer";
 import ParentDogCard from "@/components/ParentDogCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Award, Shield } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Parents() {
+  useSEO({
+    title: 'Our Breeding Dogs - Meet Our Dams & Sires',
+    description: 'Meet our exceptional Standard Parti Poodle breeding dogs. All health tested with comprehensive DNA testing and hip scoring for the healthiest puppies.',
+    canonical: '/parents'
+  });
+
   const parentDogsData = useQuery(api.parentDogs.list);
   
   const parentDogs = parentDogsData ?? [];

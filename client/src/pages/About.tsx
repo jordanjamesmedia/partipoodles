@@ -2,8 +2,15 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Heart, Stethoscope, Home, Thermometer, Users, Award, Dna, TestTube, Shield } from "lucide-react";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function About() {
+  useSEO({
+    title: 'About Us - Our Story & Breeding Philosophy',
+    description: 'Learn about Parti Poodles Australia - 16+ years of breeding experience, our commitment to health testing, and the story behind our passion for Standard Parti Poodles.',
+    canonical: '/about'
+  });
+
   return (
     <div className="min-h-screen bg-neutral-light">
       <Navigation />

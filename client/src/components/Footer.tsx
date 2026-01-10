@@ -54,6 +54,40 @@ export default function Footer() {
                 </Link>
               </li>
             </ul>
+
+            <h4 className="text-lg font-semibold mb-4 mt-6">Resources</h4>
+            <ul className="space-y-2 text-gray-300">
+              <li>
+                <a
+                  href="https://www.dogsvictoria.org.au/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  Dogs Victoria
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://embarkvet.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  Embark DNA Testing
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://poodleclubvic.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors duration-300"
+                >
+                  Poodle Club of Victoria
+                </a>
+              </li>
+            </ul>
           </div>
           
           <div>

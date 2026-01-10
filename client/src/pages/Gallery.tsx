@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { UploadResult } from "@uppy/core";
+import { useSEO } from "@/hooks/useSEO";
 
 // Photo type for Convex
 interface GalleryPhotoData {
@@ -26,6 +27,12 @@ interface GalleryPhotoData {
 }
 
 export default function Gallery() {
+  useSEO({
+    title: 'Photo Gallery - Standard Parti Poodle Pictures',
+    description: 'Browse our beautiful photo gallery of Standard Parti Poodles. See our puppies, breeding dogs, and happy families with their parti poodle companions.',
+    canonical: '/gallery'
+  });
+
   const uploadFormRef = useRef<HTMLElement>(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
