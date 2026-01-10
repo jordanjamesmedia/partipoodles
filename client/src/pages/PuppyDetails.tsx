@@ -136,8 +136,8 @@ export default function PuppyDetails() {
                 <PuppyGallery
                   photos={puppy.photos || []}
                   puppyName={puppy.name}
-                  puppyColor={puppy.color}
-                  puppyGender={puppy.gender}
+                  puppyColor={puppy.color || ''}
+                  puppyGender={puppy.gender || ''}
                   trigger={
                     <div className="relative cursor-pointer group">
                       <img 
@@ -173,8 +173,8 @@ export default function PuppyDetails() {
                             key={index}
                             photos={puppy.photos || []}
                             puppyName={puppy.name}
-                            puppyColor={puppy.color}
-                            puppyGender={puppy.gender}
+                            puppyColor={puppy.color || ''}
+                            puppyGender={puppy.gender || ''}
                             trigger={
                               <div className="relative cursor-pointer group">
                                 <img 

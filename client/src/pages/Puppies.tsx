@@ -125,6 +125,65 @@ export default function Puppies() {
         </div>
       </section>
 
+      {/* All Litters Section - shows litters that may not have puppies listed yet */}
+      {litters.length > 0 && (
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-800 mb-6">Our Litters</h2>
+              <p className="text-lg text-gray-600 max-w-4xl mx-auto">
+                View all our litters including upcoming and planned breedings. Contact us to learn more about availability.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {litters.filter(litter => litter.is_active !== false).map((litter) => {
+                const litterPuppyCount = puppies.filter(p => p.litter_id === litter._id).length;
+                return (
+                  <div
+                    key={litter._id}
+                    className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow"
+                  >
+                    <div className="p-6">
+                      <h3 className="text-xl font-serif font-bold text-gray-800 mb-3">
+                        {litter.name}
+                      </h3>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        {litter.date_of_birth && (
+                          <p className="flex items-center">
+                            <span className="mr-2">🎂</span>
+                            Born: {new Date(litter.date_of_birth).toLocaleDateString('en-AU', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        )}
+                        <p className="flex items-center">
+                          <span className="mr-2">🐕</span>
+                          {litterPuppyCount > 0
+                            ? `${litterPuppyCount} ${litterPuppyCount === 1 ? 'puppy' : 'puppies'} listed`
+                            : 'Puppies coming soon'
+                          }
+                        </p>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <a
+                          href="/contact"
+                          className="text-primary hover:text-primary/80 font-medium text-sm"
+                        >
+                          Enquire about this litter →
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       <Footer />
     </div>
   );

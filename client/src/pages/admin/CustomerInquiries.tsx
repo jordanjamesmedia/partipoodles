@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,17 +20,38 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Trash2, Eye, Phone, Mail, MessageSquare, RotateCcw } from "lucide-react";
-import type { Inquiry } from "@shared/schema";
+import { Check, Trash2, Eye, Phone, Mail, MessageSquare, RotateCcw, Filter } from "lucide-react";
+import type { Id } from "../../../../convex/_generated/dataModel";
+
+// Convex data type
+interface ConvexInquiry {
+  _id: Id<"inquiries">;
+  customer_name?: string;
+  email?: string;
+  phone?: string;
+  message?: string;
+  puppy_interest?: string;
+  status?: string;
+  response?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export default function CustomerInquiries() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
+  const [selectedInquiry, setSelectedInquiry] = useState<ConvexInquiry | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -48,103 +68,77 @@ export default function CustomerInquiries() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: inquiries = [], isLoading: inquiriesLoading } = useQuery<Inquiry[]>({
-    queryKey: ["/api/admin/inquiries"],
-    enabled: !!isAuthenticated,
+  // Convex queries and mutations
+  const inquiriesData = useQuery(api.inquiries.list);
+  const updateStatus = useMutation(api.inquiries.updateStatus);
+  const deleteInquiry = useMutation(api.inquiries.remove);
+
+  const inquiries: ConvexInquiry[] = inquiriesData ?? [];
+  const inquiriesLoading = inquiriesData === undefined;
+
+  // Filter inquiries based on status
+  const filteredInquiries = inquiries.filter((inquiry) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "new") return inquiry.status === "new" || inquiry.status === "pending" || !inquiry.status;
+    return inquiry.status === statusFilter;
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Inquiry> }) => {
-      await apiRequest("PUT", `/api/admin/inquiries/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/inquiries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Inquiry updated successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update inquiry",
-        variant: "destructive",
-      });
-    },
-  });
+  // Count by status for filter badges
+  const statusCounts = {
+    all: inquiries.length,
+    new: inquiries.filter(i => i.status === "new" || i.status === "pending" || !i.status).length,
+    responded: inquiries.filter(i => i.status === "responded").length,
+    resolved: inquiries.filter(i => i.status === "resolved").length,
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/inquiries/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/inquiries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Inquiry deleted successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to delete inquiry",
-        variant: "destructive",
-      });
-    },
-  });
-
-
-  const handleViewDetails = (inquiry: Inquiry) => {
+  const handleViewDetails = (inquiry: ConvexInquiry) => {
     setSelectedInquiry(inquiry);
     setIsDetailOpen(true);
   };
 
-  const handleStatusChange = (id: string, newStatus: 'pending' | 'responded' | 'resolved') => {
-    updateMutation.mutate({
-      id,
-      data: { status: newStatus },
-    });
+  const handleStatusChange = async (id: Id<"inquiries">, newStatus: string) => {
+    try {
+      await updateStatus({ id, status: newStatus });
+      toast({
+        title: "Success",
+        description: "Inquiry status updated",
+      });
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update inquiry",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleMarkResolved = (id: string) => {
-    updateMutation.mutate({
-      id,
-      data: { status: 'resolved' },
-    });
+  const handleMarkResolved = async (id: Id<"inquiries">) => {
+    await handleStatusChange(id, 'resolved');
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: Id<"inquiries">) => {
     if (confirm("Are you sure you want to delete this inquiry?")) {
-      deleteMutation.mutate(id);
+      try {
+        await deleteInquiry({ id });
+        toast({
+          title: "Success",
+          description: "Inquiry deleted successfully",
+        });
+      } catch (error: any) {
+        console.error('Delete error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete inquiry",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
+      case 'new':
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium';
       case 'responded':
@@ -158,6 +152,7 @@ export default function CustomerInquiries() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
+      case 'new':
       case 'pending':
         return 'New Lead';
       case 'responded':
@@ -184,13 +179,52 @@ export default function CustomerInquiries() {
     <div className="min-h-screen bg-gray-100">
       <div className="flex">
         <AdminSidebar />
-        
+
         <div className="flex-1 p-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-8" data-testid="text-inquiries-title">Customer Inquiries</h1>
-          
+
           <Card>
             <CardHeader>
-              <CardTitle>All Inquiries</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardTitle>Customer Inquiries</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-500" />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={statusFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("all")}
+                      className="text-xs"
+                    >
+                      All ({statusCounts.all})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "new" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("new")}
+                      className={`text-xs ${statusFilter !== "new" && statusCounts.new > 0 ? "border-yellow-400 text-yellow-700" : ""}`}
+                    >
+                      New Leads ({statusCounts.new})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "responded" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("responded")}
+                      className="text-xs"
+                    >
+                      Contacted ({statusCounts.responded})
+                    </Button>
+                    <Button
+                      variant={statusFilter === "resolved" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter("resolved")}
+                      className="text-xs"
+                    >
+                      Closed ({statusCounts.resolved})
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {inquiriesLoading ? (
@@ -211,7 +245,7 @@ export default function CustomerInquiries() {
                     </div>
                   ))}
                 </div>
-              ) : inquiries.length > 0 ? (
+              ) : filteredInquiries.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -225,43 +259,43 @@ export default function CustomerInquiries() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {inquiries.map((inquiry) => (
-                        <TableRow key={inquiry.id}>
-                          <TableCell data-testid={`text-inquiry-date-${inquiry.id}`}>
-                            {new Date(inquiry.createdAt!).toLocaleDateString()}
+                      {filteredInquiries.map((inquiry) => (
+                        <TableRow key={inquiry._id}>
+                          <TableCell data-testid={`text-inquiry-date-${inquiry._id}`}>
+                            {inquiry.created_at ? new Date(inquiry.created_at).toLocaleDateString() : '-'}
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium" data-testid={`text-customer-name-${inquiry.id}`}>
-                              {inquiry.customerName}
+                            <div className="font-medium" data-testid={`text-customer-name-${inquiry._id}`}>
+                              {inquiry.customer_name}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div data-testid={`text-customer-email-${inquiry.id}`}>
+                              <div data-testid={`text-customer-email-${inquiry._id}`}>
                                 {inquiry.email}
                               </div>
                               {inquiry.phone && (
-                                <div className="text-gray-500" data-testid={`text-customer-phone-${inquiry.id}`}>
+                                <div className="text-gray-500" data-testid={`text-customer-phone-${inquiry._id}`}>
                                   {inquiry.phone}
                                 </div>
                               )}
                             </div>
                           </TableCell>
                           <TableCell className="max-w-xs">
-                            <div className="truncate cursor-pointer hover:text-blue-600" 
+                            <div className="truncate cursor-pointer hover:text-blue-600"
                                  onClick={() => handleViewDetails(inquiry)}
-                                 data-testid={`text-inquiry-message-${inquiry.id}`}>
+                                 data-testid={`text-inquiry-message-${inquiry._id}`}>
                               {inquiry.message}
                             </div>
-                            {inquiry.puppyInterest && (
+                            {inquiry.puppy_interest && (
                               <div className="text-sm text-gray-500">
-                                Interested in: {inquiry.puppyInterest}
+                                Interested in: {inquiry.puppy_interest}
                               </div>
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className={getStatusBadgeClass(inquiry.status)} data-testid={`text-inquiry-status-${inquiry.id}`}>
-                              {getStatusLabel(inquiry.status)}
+                            <span className={getStatusBadgeClass(inquiry.status || '')} data-testid={`text-inquiry-status-${inquiry._id}`}>
+                              {getStatusLabel(inquiry.status || '')}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -270,18 +304,17 @@ export default function CustomerInquiries() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleViewDetails(inquiry)}
-                                data-testid={`button-view-${inquiry.id}`}
+                                data-testid={`button-view-${inquiry._id}`}
                                 title="View Details"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              {inquiry.status === 'pending' && (
+                              {(inquiry.status === 'new' || inquiry.status === 'pending') && (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleStatusChange(inquiry.id, 'responded')}
-                                  disabled={updateMutation.isPending}
-                                  data-testid={`button-contacted-${inquiry.id}`}
+                                  onClick={() => handleStatusChange(inquiry._id, 'responded')}
+                                  data-testid={`button-contacted-${inquiry._id}`}
                                   title="Mark as Contacted"
                                 >
                                   <Phone className="h-4 w-4" />
@@ -291,9 +324,8 @@ export default function CustomerInquiries() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleStatusChange(inquiry.id, 'pending')}
-                                  disabled={updateMutation.isPending}
-                                  data-testid={`button-reopen-${inquiry.id}`}
+                                  onClick={() => handleStatusChange(inquiry._id, 'new')}
+                                  data-testid={`button-reopen-${inquiry._id}`}
                                   title="Reopen Lead"
                                 >
                                   <RotateCcw className="h-4 w-4" />
@@ -302,9 +334,8 @@ export default function CustomerInquiries() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleMarkResolved(inquiry.id)}
-                                  disabled={updateMutation.isPending}
-                                  data-testid={`button-resolve-${inquiry.id}`}
+                                  onClick={() => handleMarkResolved(inquiry._id)}
+                                  data-testid={`button-resolve-${inquiry._id}`}
                                   title="Mark as Closed"
                                 >
                                   <Check className="h-4 w-4" />
@@ -313,9 +344,8 @@ export default function CustomerInquiries() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDelete(inquiry.id)}
-                                disabled={deleteMutation.isPending}
-                                data-testid={`button-delete-inquiry-${inquiry.id}`}
+                                onClick={() => handleDelete(inquiry._id)}
+                                data-testid={`button-delete-inquiry-${inquiry._id}`}
                                 title="Delete Inquiry"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -329,7 +359,20 @@ export default function CustomerInquiries() {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No inquiries found</p>
+                  <p className="text-gray-500">
+                    {statusFilter === "all"
+                      ? "No inquiries found"
+                      : `No ${statusFilter === "new" ? "new" : statusFilter} inquiries found`}
+                  </p>
+                  {statusFilter !== "all" && (
+                    <Button
+                      variant="link"
+                      onClick={() => setStatusFilter("all")}
+                      className="mt-2"
+                    >
+                      View all inquiries
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -349,13 +392,13 @@ export default function CustomerInquiries() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-gray-600">Name</label>
-                        <p className="text-gray-900">{selectedInquiry.customerName}</p>
+                        <p className="text-gray-900">{selectedInquiry.customer_name}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-gray-600">Email</label>
                         <div className="flex items-center gap-2">
                           <p className="text-gray-900">{selectedInquiry.email}</p>
-                          <a 
+                          <a
                             href={`mailto:${selectedInquiry.email}`}
                             className="text-blue-600 hover:text-blue-800"
                             title="Send Email"
@@ -372,7 +415,7 @@ export default function CustomerInquiries() {
                       )}
                       <div>
                         <label className="text-sm font-medium text-gray-600">Date Submitted</label>
-                        <p className="text-gray-900">{new Date(selectedInquiry.createdAt!).toLocaleDateString()}</p>
+                        <p className="text-gray-900">{selectedInquiry.created_at ? new Date(selectedInquiry.created_at).toLocaleDateString() : '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -383,10 +426,10 @@ export default function CustomerInquiries() {
                     <div className="bg-white border rounded-lg p-4">
                       <p className="text-gray-900 whitespace-pre-wrap">{selectedInquiry.message}</p>
                     </div>
-                    {selectedInquiry.puppyInterest && (
+                    {selectedInquiry.puppy_interest && (
                       <div className="mt-3">
                         <label className="text-sm font-medium text-gray-600">Puppy Interest</label>
-                        <p className="text-gray-900">{selectedInquiry.puppyInterest}</p>
+                        <p className="text-gray-900">{selectedInquiry.puppy_interest}</p>
                       </div>
                     )}
                   </div>
@@ -395,19 +438,18 @@ export default function CustomerInquiries() {
                   <div>
                     <h3 className="font-semibold text-lg mb-3">Lead Status</h3>
                     <div className="flex items-center gap-3">
-                      <span className={getStatusBadgeClass(selectedInquiry.status)}>
-                        {getStatusLabel(selectedInquiry.status)}
+                      <span className={getStatusBadgeClass(selectedInquiry.status || '')}>
+                        {getStatusLabel(selectedInquiry.status || '')}
                       </span>
                       <div className="flex gap-2">
-                        {selectedInquiry.status === 'pending' && (
+                        {(selectedInquiry.status === 'new' || selectedInquiry.status === 'pending') && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              handleStatusChange(selectedInquiry.id, 'responded');
+                              handleStatusChange(selectedInquiry._id, 'responded');
                               setIsDetailOpen(false);
                             }}
-                            disabled={updateMutation.isPending}
                             className="flex items-center gap-2"
                           >
                             <Phone className="h-4 w-4" />
@@ -419,10 +461,9 @@ export default function CustomerInquiries() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              handleStatusChange(selectedInquiry.id, 'pending');
+                              handleStatusChange(selectedInquiry._id, 'new');
                               setIsDetailOpen(false);
                             }}
-                            disabled={updateMutation.isPending}
                             className="flex items-center gap-2"
                           >
                             <MessageSquare className="h-4 w-4" />
@@ -434,10 +475,9 @@ export default function CustomerInquiries() {
                             variant="default"
                             size="sm"
                             onClick={() => {
-                              handleStatusChange(selectedInquiry.id, 'pending');
+                              handleStatusChange(selectedInquiry._id, 'new');
                               setIsDetailOpen(false);
                             }}
-                            disabled={updateMutation.isPending}
                             className="flex items-center gap-2"
                           >
                             <RotateCcw className="h-4 w-4" />
@@ -448,10 +488,9 @@ export default function CustomerInquiries() {
                             variant="default"
                             size="sm"
                             onClick={() => {
-                              handleMarkResolved(selectedInquiry.id);
+                              handleMarkResolved(selectedInquiry._id);
                               setIsDetailOpen(false);
                             }}
-                            disabled={updateMutation.isPending}
                             className="flex items-center gap-2"
                           >
                             <Check className="h-4 w-4" />
@@ -473,10 +512,9 @@ export default function CustomerInquiries() {
                     <Button
                       variant="destructive"
                       onClick={() => {
-                        handleDelete(selectedInquiry.id);
+                        handleDelete(selectedInquiry._id);
                         setIsDetailOpen(false);
                       }}
-                      disabled={deleteMutation.isPending}
                       className="flex items-center gap-2"
                     >
                       <Trash2 className="h-4 w-4" />

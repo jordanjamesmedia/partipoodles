@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
+import { useQuery, useMutation as useConvexMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import AdminLayout from "@/components/AdminLayout";
 import PuppyForm from "@/components/forms/PuppyForm";
 import { Button } from "@/components/ui/button";
@@ -26,66 +24,42 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import type { Puppy } from "@shared/schema";
 
 export default function ManagePuppies() {
   const { toast } = useToast();
-  const [selectedPuppy, setSelectedPuppy] = useState<Puppy | null>(null);
+  const [selectedPuppy, setSelectedPuppy] = useState<any | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: puppies = [], isLoading: puppiesLoading } = useQuery<Puppy[]>({
-    queryKey: ["/api/admin/puppies"],
-  });
+  const puppies = useQuery(api.puppies.list);
+  const litters = useQuery(api.litters.list);
+  const puppiesLoading = puppies === undefined;
 
-  // Fetch litters for birth date display
-  const { data: litters = [] } = useQuery({
-    queryKey: ['/api/litters'],
-    queryFn: async () => {
-      const response = await fetch('/api/litters');
-      return response.json();
-    },
-  });
+  const deletePuppy = useConvexMutation(api.puppies.remove);
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/admin/puppies/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/puppies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
-      toast({
-        title: "Success",
-        description: "Puppy deleted successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to delete puppy",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleEdit = (puppy: Puppy) => {
+  const handleEdit = (puppy: any) => {
     setSelectedPuppy(puppy);
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: Id<"puppies">) => {
     if (confirm("Are you sure you want to delete this puppy?")) {
-      deleteMutation.mutate(id);
+      setIsDeleting(true);
+      try {
+        await deletePuppy({ id });
+        toast({
+          title: "Success",
+          description: "Puppy deleted successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete puppy",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -154,7 +128,7 @@ export default function ManagePuppies() {
                     </div>
                   ))}
             </div>
-          ) : puppies.length > 0 ? (
+          ) : puppies && puppies.length > 0 ? (
             <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -170,11 +144,11 @@ export default function ManagePuppies() {
                     </TableHeader>
                     <TableBody>
                       {puppies.map((puppy) => (
-                        <TableRow key={puppy.id}>
+                        <TableRow key={puppy._id}>
                           <TableCell>
                             {puppy.photos && puppy.photos.length > 0 ? (
-                              <img 
-                                src={puppy.photos[0]} 
+                              <img
+                                src={puppy.photos[0]}
                                 alt={puppy.name}
                                 className="h-12 w-12 rounded-full object-cover"
                               />
@@ -185,30 +159,30 @@ export default function ManagePuppies() {
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium" data-testid={`text-puppy-name-${puppy.id}`}>
+                            <div className="font-medium" data-testid={`text-puppy-name-${puppy._id}`}>
                               {puppy.name}
                             </div>
                           </TableCell>
-                          <TableCell data-testid={`text-puppy-color-${puppy.id}`}>
+                          <TableCell data-testid={`text-puppy-color-${puppy._id}`}>
                             {puppy.color}
                           </TableCell>
-                          <TableCell data-testid={`text-puppy-gender-${puppy.id}`}>
+                          <TableCell data-testid={`text-puppy-gender-${puppy._id}`}>
                             {puppy.gender}
                           </TableCell>
-                          <TableCell data-testid={`text-puppy-dob-${puppy.id}`}>
-                            {puppy.litterId ? (
+                          <TableCell data-testid={`text-puppy-dob-${puppy._id}`}>
+                            {puppy.litter_id ? (
                               (() => {
-                                const litter = litters.find((l: any) => l.id === puppy.litterId);
-                                return litter ? new Date(litter.dateOfBirth).toLocaleDateString() : 'No litter';
+                                const litter = litters?.find((l: any) => l._id === puppy.litter_id);
+                                return litter?.date_of_birth ? new Date(litter.date_of_birth).toLocaleDateString() : 'No litter';
                               })()
                             ) : (
-                              puppy.litterDateOfBirth 
-                                ? new Date(puppy.litterDateOfBirth).toLocaleDateString()
+                              puppy.litter_date_of_birth
+                                ? new Date(puppy.litter_date_of_birth).toLocaleDateString()
                                 : 'No date'
                             )}
                           </TableCell>
                           <TableCell>
-                            <span className={getStatusBadgeClass(puppy.status)} data-testid={`text-puppy-status-${puppy.id}`}>
+                            <span className={getStatusBadgeClass(puppy.status || '')} data-testid={`text-puppy-status-${puppy._id}`}>
                               {puppy.status}
                             </span>
                           </TableCell>
@@ -218,16 +192,16 @@ export default function ManagePuppies() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEdit(puppy)}
-                                data-testid={`button-edit-${puppy.id}`}
+                                data-testid={`button-edit-${puppy._id}`}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDelete(puppy.id)}
-                                disabled={deleteMutation.isPending}
-                                data-testid={`button-delete-${puppy.id}`}
+                                onClick={() => handleDelete(puppy._id)}
+                                disabled={isDeleting}
+                                data-testid={`button-delete-${puppy._id}`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

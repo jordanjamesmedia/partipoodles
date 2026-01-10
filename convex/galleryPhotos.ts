@@ -1,22 +1,64 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// Get all public gallery photos
+// Helper to check if a string is a Convex storage ID
+const isStorageId = (url: string) => {
+  // Convex storage IDs are alphanumeric strings without slashes or dots
+  return /^[a-z0-9]{20,}$/i.test(url);
+};
+
+// Get all public gallery photos with resolved URLs
 export const listPublic = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const photos = await ctx.db
       .query("gallery_photos")
       .withIndex("by_is_public", (q) => q.eq("is_public", true))
       .collect();
+
+    // Resolve storage IDs to URLs
+    const photosWithUrls = await Promise.all(
+      photos.map(async (photo) => {
+        let imageUrl = photo.url;
+        if (photo.url && isStorageId(photo.url)) {
+          try {
+            const url = await ctx.storage.getUrl(photo.url as any);
+            if (url) imageUrl = url;
+          } catch {
+            // Keep original URL if storage lookup fails
+          }
+        }
+        return { ...photo, imageUrl };
+      })
+    );
+
+    return photosWithUrls;
   },
 });
 
-// Get all gallery photos (for admin)
+// Get all gallery photos (for admin) with resolved URLs
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("gallery_photos").collect();
+    const photos = await ctx.db.query("gallery_photos").collect();
+
+    // Resolve storage IDs to URLs
+    const photosWithUrls = await Promise.all(
+      photos.map(async (photo) => {
+        let imageUrl = photo.url;
+        if (photo.url && isStorageId(photo.url)) {
+          try {
+            const url = await ctx.storage.getUrl(photo.url as any);
+            if (url) imageUrl = url;
+          } catch {
+            // Keep original URL if storage lookup fails
+          }
+        }
+        return { ...photo, imageUrl };
+      })
+    );
+
+    return photosWithUrls;
   },
 });
 

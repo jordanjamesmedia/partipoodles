@@ -1,6 +1,5 @@
-import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import AdminSidebar from "./AdminSidebar";
@@ -10,17 +9,33 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  // Check authentication from localStorage
+  const checkAuth = useCallback(() => {
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+    const adminUser = localStorage.getItem("adminUser");
+    console.log("AdminLayout auth check:", { adminLoggedIn, hasAdminUser: !!adminUser });
+    return adminLoggedIn === "true" && !!adminUser;
+  }, []);
+
+  // Check auth on mount and when location changes
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      setLocation("/admin-login");
-    }
-  }, [isAuthenticated, isLoading, setLocation]);
+    const authenticated = checkAuth();
+    setIsAuthenticated(authenticated);
 
-  if (isLoading) {
+    if (!authenticated) {
+      console.log("Not authenticated, redirecting to login");
+      setLocation("/admin-login");
+    } else {
+      console.log("Authenticated, rendering admin layout");
+    }
+  }, [location, checkAuth, setLocation]);
+
+  // Show loading state while checking auth
+  if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
@@ -32,7 +47,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   if (!isAuthenticated) {
-    return null;
+    // Show brief loading while redirecting
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

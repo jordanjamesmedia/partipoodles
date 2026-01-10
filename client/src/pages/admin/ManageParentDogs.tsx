@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,111 +9,70 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Edit, Trash2, Calendar, Award, Heart, Upload } from "lucide-react";
-import type { ParentDog } from "@shared/schema";
+import { Search, Plus, Edit, Trash2, Calendar, Award, Heart } from "lucide-react";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import ParentDogForm from "@/components/forms/ParentDogForm";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import { apiRequest } from "@/lib/queryClient";
+
+// Convex data type
+interface ConvexParentDog {
+  _id: Id<"parent_dogs">;
+  name: string;
+  registered_name?: string;
+  color?: string;
+  gender: string;
+  date_of_birth?: string;
+  description?: string;
+  photos?: string[];
+  status: string;
+  health_testing?: string;
+  achievements?: string;
+  pedigree?: string;
+  microchip_id?: string;
+  registration_number?: string;
+  weight?: number;
+  height?: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export default function ManageParentDogs() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingParentDog, setEditingParentDog] = useState<ParentDog | null>(null);
-  const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
+  const [editingParentDog, setEditingParentDog] = useState<ConvexParentDog | null>(null);
 
-  const { data: parentDogs = [], isLoading, error } = useQuery<ParentDog[]>({
-    queryKey: ["/api/admin/parent-dogs"],
-  });
+  // Convex queries and mutations
+  const parentDogsData = useQuery(api.parentDogs.list);
+  const deleteParentDog = useMutation(api.parentDogs.remove);
+  const updateParentDog = useMutation(api.parentDogs.update);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest('DELETE', `/api/admin/parent-dogs/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/parent-dogs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parent-dogs"] });
+  const parentDogs: ConvexParentDog[] = parentDogsData ?? [];
+  const isLoading = parentDogsData === undefined;
+
+  const handleDelete = async (id: Id<"parent_dogs">) => {
+    try {
+      await deleteParentDog({ id });
       toast({ title: "Success", description: "Parent dog deleted successfully!" });
-    },
-    onError: (error: any) => {
+    } catch (error: any) {
       console.error('Delete error:', error);
-      toast({ 
-        title: "Error", 
+      toast({
+        title: "Error",
         description: error.message || "Failed to delete parent dog",
-        variant: "destructive" 
+        variant: "destructive"
       });
-    },
-  });
-
-  const handleGetUploadParameters = async () => {
-    const response = await fetch('/api/objects/upload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-    const data = await response.json();
-    return {
-      method: 'PUT' as const,
-      url: data.uploadURL,
-    };
-  };
-
-  const handleUploadComplete = async (result: any, parentDogId: string) => {
-    console.log('Upload result:', result);
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
-      const imageURL = uploadedFile.uploadURL;
-      console.log('Image URL from upload:', imageURL);
-      
-      try {
-        const response = await apiRequest('PUT', `/api/admin/parent-dogs/${parentDogId}/photos`, {
-          photoURL: imageURL,
-        });
-        console.log('Photo save response:', response);
-        
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/parent-dogs"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/parent-dogs"] });
-        setUploadingImageFor(null);
-        toast({ title: "Success", description: "Parent dog photo uploaded successfully!" });
-      } catch (error: any) {
-        console.error('Photo upload error:', error);
-        toast({ 
-          title: "Error", 
-          description: error.message || "Failed to save photo",
-          variant: "destructive" 
-        });
-      }
     }
   };
 
   const filteredParentDogs = parentDogs.filter(dog =>
     dog.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    dog.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (dog.registeredName && dog.registeredName.toLowerCase().includes(searchTerm.toLowerCase()))
+    (dog.color && dog.color.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (dog.registered_name && dog.registered_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const convertToPublicUrl = (storageUrl: string) => {
-    // Convert /objects/uploads/ to /public-objects/uploads/ for proper serving
-    if (storageUrl.startsWith('/objects/uploads/')) {
-      return storageUrl.replace('/objects/uploads/', '/public-objects/uploads/');
-    }
-    
-    // If it's a full GCS URL, convert it
-    if (storageUrl.includes('storage.googleapis.com')) {
-      const matches = storageUrl.match(/\/\.private\/uploads\/([^?]+)/);
-      if (matches) {
-        return `/public-objects/uploads/${matches[1]}`;
-      }
-    }
-    
-    return storageUrl;
-  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
       active: "bg-green-100 text-green-800",
-      retired: "bg-gray-100 text-gray-800", 
+      retired: "bg-gray-100 text-gray-800",
       planned: "bg-blue-100 text-blue-800"
     };
     return variants[status as keyof typeof variants] || variants.active;
@@ -127,21 +87,28 @@ export default function ManageParentDogs() {
     return statusMap[status as keyof typeof statusMap] || status;
   };
 
-  const formatWeight = (weightInGrams: number | null) => {
-    if (!weightInGrams) return "Not recorded";
-    return `${(weightInGrams / 1000).toFixed(1)} kg`;
+  const formatWeight = (weight: number | undefined) => {
+    if (!weight) return "Not recorded";
+    return `${weight.toFixed(1)} kg`;
   };
 
-  if (error) {
-    return (
-      <AdminLayout>
-        <div className="text-center py-12">
-          <h3 className="text-2xl font-semibold text-red-600 mb-4">Error Loading Parent Dogs</h3>
-          <p className="text-gray-600">Please try again later.</p>
-        </div>
-      </AdminLayout>
-    );
-  }
+  // Convert parent dog to format expected by form
+  const convertToFormFormat = (dog: ConvexParentDog) => ({
+    id: dog._id,
+    name: dog.name,
+    registeredName: dog.registered_name || null,
+    color: dog.color || "",
+    gender: dog.gender as "male" | "female",
+    dateOfBirth: dog.date_of_birth ? new Date(dog.date_of_birth) : null,
+    description: dog.description || null,
+    photos: dog.photos || [],
+    status: dog.status,
+    healthTesting: dog.health_testing || null,
+    achievements: dog.achievements || null,
+    pedigree: dog.pedigree || null,
+    weight: dog.weight || null,
+    height: dog.height || null,
+  });
 
   return (
     <AdminLayout>
@@ -253,7 +220,7 @@ export default function ManageParentDogs() {
                 {searchTerm ? "No parent dogs found" : "No parent dogs yet"}
               </h3>
               <p className="text-gray-600 mb-4">
-                {searchTerm 
+                {searchTerm
                   ? "Try adjusting your search terms to find more parent dogs."
                   : "Get started by adding your first parent dog to the breeding program."
                 }
@@ -285,20 +252,34 @@ export default function ManageParentDogs() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredParentDogs.map((parentDog) => {
               const hasPhotos = parentDog.photos && parentDog.photos.length > 0;
-              const mainPhoto = hasPhotos && parentDog.photos ? convertToPublicUrl(parentDog.photos[0]) : null;
+              const mainPhoto = hasPhotos && parentDog.photos ? parentDog.photos[0] : null;
+
+              // Helper to get proper image URL
+              const getImageUrl = (photo: string) => {
+                if (photo.startsWith('https://') || photo.startsWith('http://')) {
+                  return photo;
+                }
+                // Fallback for unresolved storage IDs - shouldn't happen after Convex deploy
+                return `/public-objects/uploads/${photo}`;
+              };
 
               return (
-                <Card key={parentDog.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`parent-dog-card-${parentDog.id}`}>
+                <Card key={parentDog._id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`parent-dog-card-${parentDog._id}`}>
                   <div className="relative">
-                    {hasPhotos ? (
-                      <img 
-                        src={mainPhoto || ""}
+                    {hasPhotos && mainPhoto ? (
+                      <img
+                        src={getImageUrl(mainPhoto)}
                         alt={`${parentDog.name} - ${parentDog.color}`}
                         className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          // If image fails to load, show placeholder
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement?.querySelector('.placeholder')?.classList.remove('hidden');
+                        }}
                       />
                     ) : (
                       <div className="w-full h-48 bg-gradient-to-br from-orange-100 to-orange-200 flex flex-col items-center justify-center">
-                        <img 
+                        <img
                           src="/attached_assets/puppy paw print_1754361694595.png"
                           alt="Paw print"
                           className="w-16 h-16 opacity-60 mb-2"
@@ -313,34 +294,38 @@ export default function ManageParentDogs() {
                       {parentDog.gender === 'male' ? '♂ Sire' : '♀ Dam'}
                     </Badge>
                   </div>
-                  
+
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{parentDog.name}</CardTitle>
-                    {parentDog.registeredName && (
+                    {parentDog.registered_name && (
                       <CardDescription className="text-sm italic">
-                        {parentDog.registeredName}
+                        {parentDog.registered_name}
                       </CardDescription>
                     )}
                     <CardDescription className="text-primary font-medium">
-                      {parentDog.color}
+                      {parentDog.color || "Color not specified"}
                     </CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                       <div className="flex items-center">
                         <Calendar className="mr-1 h-3 w-3" />
-                        Born {new Date(parentDog.dateOfBirth).toLocaleDateString('en-AU', {
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                        {parentDog.date_of_birth ? (
+                          <>Born {new Date(parentDog.date_of_birth).toLocaleDateString('en-AU', {
+                            month: 'short',
+                            year: 'numeric'
+                          })}</>
+                        ) : (
+                          "Birth date not set"
+                        )}
                       </div>
                       <div className="flex items-center">
                         <Heart className="mr-1 h-3 w-3" />
                         {formatWeight(parentDog.weight)}
                       </div>
                     </div>
-                    
+
                     {parentDog.achievements && (
                       <div className="flex items-start">
                         <Award className="mr-1 h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
@@ -349,20 +334,9 @@ export default function ManageParentDogs() {
                         </p>
                       </div>
                     )}
-                    
+
                     <div className="flex gap-2 mt-4">
-                      <ObjectUploader
-                        maxNumberOfFiles={1}
-                        maxFileSize={10485760}
-                        onGetUploadParameters={handleGetUploadParameters}
-                        onComplete={(result) => handleUploadComplete(result, parentDog.id)}
-                        buttonClassName="flex-1 text-xs px-2 py-1"
-                      >
-                        <Upload className="mr-1 h-3 w-3" />
-                        Photo
-                      </ObjectUploader>
-                      
-                      <Dialog open={editingParentDog?.id === parentDog.id} onOpenChange={(open) => {
+                      <Dialog open={editingParentDog?._id === parentDog._id} onOpenChange={(open) => {
                         if (!open) setEditingParentDog(null);
                       }}>
                         <DialogTrigger asChild>
@@ -371,7 +345,7 @@ export default function ManageParentDogs() {
                             size="sm"
                             className="flex-1 text-xs px-2 py-1"
                             onClick={() => setEditingParentDog(parentDog)}
-                            data-testid={`button-edit-parent-dog-${parentDog.id}`}
+                            data-testid={`button-edit-parent-dog-${parentDog._id}`}
                           >
                             <Edit className="mr-1 h-3 w-3" />
                             Edit
@@ -385,23 +359,23 @@ export default function ManageParentDogs() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="flex-1 overflow-y-auto min-h-0 pr-1">
-                            {editingParentDog && editingParentDog.id === parentDog.id && (
-                              <ParentDogForm 
-                                parentDog={editingParentDog} 
-                                onSuccess={() => setEditingParentDog(null)} 
+                            {editingParentDog && editingParentDog._id === parentDog._id && (
+                              <ParentDogForm
+                                parentDog={convertToFormFormat(editingParentDog)}
+                                onSuccess={() => setEditingParentDog(null)}
                               />
                             )}
                           </div>
                         </DialogContent>
                       </Dialog>
-                      
+
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1"
-                            data-testid={`button-delete-parent-dog-${parentDog.id}`}
+                            data-testid={`button-delete-parent-dog-${parentDog._id}`}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -416,7 +390,7 @@ export default function ManageParentDogs() {
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => deleteMutation.mutate(parentDog.id)}
+                              onClick={() => handleDelete(parentDog._id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               Delete

@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import AdminSidebar from "@/components/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,20 +33,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Eye, Edit } from "lucide-react";
-import type { Customer, InsertCustomer } from "@shared/schema";
+import { UserPlus, Eye, Edit, Phone, Trash2 } from "lucide-react";
+import type { Id } from "../../../../convex/_generated/dataModel";
+
+// Convex data type
+interface ConvexCustomer {
+  _id: Id<"customers">;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+  status?: string;
+  last_contact_date?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export default function CustomerCRM() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<ConvexCustomer | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<InsertCustomer>>({
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    location: "",
+    address: "",
     status: "prospective",
     notes: "",
   });
@@ -67,75 +80,35 @@ export default function CustomerCRM() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
-    queryKey: ["/api/admin/customers"],
-    enabled: !!isAuthenticated,
-  });
+  // Convex queries and mutations
+  const customersData = useQuery(api.customers.list);
+  const createCustomer = useMutation(api.customers.create);
+  const updateCustomer = useMutation(api.customers.update);
+  const deleteCustomer = useMutation(api.customers.remove);
 
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertCustomer) => {
-      await apiRequest("POST", "/api/admin/customers", data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/statistics"] });
+  const customers: ConvexCustomer[] = customersData ?? [];
+  const customersLoading = customersData === undefined;
+
+  const handleDelete = async (customer: ConvexCustomer) => {
+    if (!confirm(`Are you sure you want to delete "${customer.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteCustomer({ id: customer._id });
       toast({
         title: "Success",
-        description: "Customer created successfully",
+        description: "Customer deleted successfully",
       });
-      handleFormClose();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
+    } catch (error: any) {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
-        description: "Failed to create customer",
+        description: error.message || "Failed to delete customer",
         variant: "destructive",
       });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertCustomer> }) => {
-      await apiRequest("PUT", `/api/admin/customers/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/customers"] });
-      toast({
-        title: "Success",
-        description: "Customer updated successfully",
-      });
-      handleFormClose();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/admin-login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update customer",
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  };
 
   const handleFormClose = () => {
     setIsFormOpen(false);
@@ -144,33 +117,33 @@ export default function CustomerCRM() {
       name: "",
       email: "",
       phone: "",
-      location: "",
+      address: "",
       status: "prospective",
       notes: "",
     });
   };
 
-  const handleEdit = (customer: Customer) => {
+  const handleEdit = (customer: ConvexCustomer) => {
     setSelectedCustomer(customer);
     setFormData({
       name: customer.name,
       email: customer.email,
       phone: customer.phone || "",
-      location: customer.location || "",
-      status: customer.status,
+      address: customer.address || "",
+      status: customer.status || "prospective",
       notes: customer.notes || "",
     });
     setIsFormOpen(true);
   };
 
-  const handleView = (customer: Customer) => {
+  const handleView = (customer: ConvexCustomer) => {
     setSelectedCustomer(customer);
     setIsViewOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email) {
       toast({
         title: "Error",
@@ -180,27 +153,48 @@ export default function CustomerCRM() {
       return;
     }
 
-    const submitData: InsertCustomer = {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || null,
-      location: formData.location || null,
-      status: formData.status as "prospective" | "current" | "past",
-      notes: formData.notes || null,
-      lastContactDate: new Date(),
-    };
-
-    if (selectedCustomer) {
-      updateMutation.mutate({
-        id: selectedCustomer.id,
-        data: submitData,
+    try {
+      if (selectedCustomer) {
+        await updateCustomer({
+          id: selectedCustomer._id,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          status: formData.status,
+          notes: formData.notes || undefined,
+          last_contact_date: new Date().toISOString(),
+        });
+        toast({
+          title: "Success",
+          description: "Customer updated successfully",
+        });
+      } else {
+        await createCustomer({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          status: formData.status,
+          notes: formData.notes || undefined,
+        });
+        toast({
+          title: "Success",
+          description: "Customer created successfully",
+        });
+      }
+      handleFormClose();
+    } catch (error: any) {
+      console.error('Customer error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save customer",
+        variant: "destructive",
       });
-    } else {
-      createMutation.mutate(submitData);
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusBadgeClass = (status: string | undefined) => {
     switch (status) {
       case 'prospective':
         return 'status-badge bg-blue-100 text-blue-800';
@@ -228,7 +222,7 @@ export default function CustomerCRM() {
     <div className="min-h-screen bg-gray-100">
       <div className="flex">
         <AdminSidebar />
-        
+
         <div className="flex-1 p-8">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800" data-testid="text-crm-title">Puppy Portal - Customer CRM</h1>
@@ -281,12 +275,12 @@ export default function CustomerCRM() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="location">Location</Label>
+                      <Label htmlFor="address">Address</Label>
                       <Input
-                        id="location"
-                        value={formData.location}
-                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                        data-testid="input-customer-location"
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        data-testid="input-customer-address"
                       />
                     </div>
                   </div>
@@ -300,7 +294,7 @@ export default function CustomerCRM() {
                       <SelectTrigger data-testid="select-customer-status">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="z-[200]">
                         <SelectItem value="prospective">Prospective</SelectItem>
                         <SelectItem value="current">Current</SelectItem>
                         <SelectItem value="past">Past</SelectItem>
@@ -323,9 +317,8 @@ export default function CustomerCRM() {
                     <Button type="button" variant="outline" onClick={handleFormClose}>
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={createMutation.isPending || updateMutation.isPending}
+                    <Button
+                      type="submit"
                       data-testid="button-save-customer"
                     >
                       {selectedCustomer ? 'Update' : 'Create'} Customer
@@ -335,7 +328,7 @@ export default function CustomerCRM() {
               </DialogContent>
             </Dialog>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>All Customers</CardTitle>
@@ -366,7 +359,7 @@ export default function CustomerCRM() {
                       <TableRow>
                         <TableHead>Customer</TableHead>
                         <TableHead>Contact</TableHead>
-                        <TableHead>Location</TableHead>
+                        <TableHead>Address</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Last Contact</TableHead>
                         <TableHead>Actions</TableHead>
@@ -374,35 +367,35 @@ export default function CustomerCRM() {
                     </TableHeader>
                     <TableBody>
                       {customers.map((customer) => (
-                        <TableRow key={customer.id}>
+                        <TableRow key={customer._id}>
                           <TableCell>
-                            <div className="font-medium" data-testid={`text-customer-name-${customer.id}`}>
+                            <div className="font-medium" data-testid={`text-customer-name-${customer._id}`}>
                               {customer.name}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div data-testid={`text-customer-email-${customer.id}`}>
+                              <div data-testid={`text-customer-email-${customer._id}`}>
                                 {customer.email}
                               </div>
                               {customer.phone && (
-                                <div className="text-gray-500" data-testid={`text-customer-phone-${customer.id}`}>
+                                <div className="text-gray-500" data-testid={`text-customer-phone-${customer._id}`}>
                                   {customer.phone}
                                 </div>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell data-testid={`text-customer-location-${customer.id}`}>
-                            {customer.location || '-'}
+                          <TableCell data-testid={`text-customer-address-${customer._id}`}>
+                            {customer.address || '-'}
                           </TableCell>
                           <TableCell>
-                            <span className={getStatusBadgeClass(customer.status)} data-testid={`text-customer-status-${customer.id}`}>
-                              {customer.status}
+                            <span className={getStatusBadgeClass(customer.status)} data-testid={`text-customer-status-${customer._id}`}>
+                              {customer.status || 'prospective'}
                             </span>
                           </TableCell>
-                          <TableCell data-testid={`text-customer-last-contact-${customer.id}`}>
-                            {customer.lastContactDate 
-                              ? new Date(customer.lastContactDate).toLocaleDateString()
+                          <TableCell data-testid={`text-customer-last-contact-${customer._id}`}>
+                            {customer.last_contact_date
+                              ? new Date(customer.last_contact_date).toLocaleDateString()
                               : '-'
                             }
                           </TableCell>
@@ -412,7 +405,7 @@ export default function CustomerCRM() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleView(customer)}
-                                data-testid={`button-view-customer-${customer.id}`}
+                                data-testid={`button-view-customer-${customer._id}`}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -420,9 +413,17 @@ export default function CustomerCRM() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleEdit(customer)}
-                                data-testid={`button-edit-customer-${customer.id}`}
+                                data-testid={`button-edit-customer-${customer._id}`}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(customer)}
+                                data-testid={`button-delete-customer-${customer._id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -434,8 +435,8 @@ export default function CustomerCRM() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No customers found</p>
-                  <Button 
-                    onClick={() => setIsFormOpen(true)} 
+                  <Button
+                    onClick={() => setIsFormOpen(true)}
                     className="btn-primary"
                     data-testid="button-add-first-customer"
                   >
@@ -472,8 +473,8 @@ export default function CustomerCRM() {
                       <p>{selectedCustomer.phone || '-'}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Location</Label>
-                      <p>{selectedCustomer.location || '-'}</p>
+                      <Label className="text-sm font-medium text-gray-600">Address</Label>
+                      <p>{selectedCustomer.address || '-'}</p>
                     </div>
                   </div>
 
@@ -481,14 +482,14 @@ export default function CustomerCRM() {
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Status</Label>
                       <span className={getStatusBadgeClass(selectedCustomer.status)}>
-                        {selectedCustomer.status}
+                        {selectedCustomer.status || 'prospective'}
                       </span>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Last Contact</Label>
                       <p>
-                        {selectedCustomer.lastContactDate 
-                          ? new Date(selectedCustomer.lastContactDate).toLocaleDateString()
+                        {selectedCustomer.last_contact_date
+                          ? new Date(selectedCustomer.last_contact_date).toLocaleDateString()
                           : '-'
                         }
                       </p>
@@ -505,11 +506,11 @@ export default function CustomerCRM() {
                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Created</Label>
-                      <p>{new Date(selectedCustomer.createdAt!).toLocaleDateString()}</p>
+                      <p>{selectedCustomer.created_at ? new Date(selectedCustomer.created_at).toLocaleDateString() : '-'}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-600">Updated</Label>
-                      <p>{new Date(selectedCustomer.updatedAt!).toLocaleDateString()}</p>
+                      <p>{selectedCustomer.updated_at ? new Date(selectedCustomer.updated_at).toLocaleDateString() : '-'}</p>
                     </div>
                   </div>
 

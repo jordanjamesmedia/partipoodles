@@ -2,11 +2,10 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useState, useRef } from "react";
-import { Eye, X, Upload, Camera } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Eye, X, Upload, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import OrientationFixedImage from "@/components/OrientationFixedImage";
+import LazyImage from "@/components/LazyImage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ import { useSEO } from "@/hooks/useSEO";
 interface GalleryPhotoData {
   _id: string;
   url: string;
+  imageUrl?: string; // Resolved URL from Convex storage
   caption?: string | null;
   filename: string;
   is_public?: boolean;
@@ -34,7 +34,8 @@ export default function Gallery() {
   });
 
   const uploadFormRef = useRef<HTMLElement>(null);
-  const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhotoData | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [uploaderName, setUploaderName] = useState("");
   const [uploaderEmail, setUploaderEmail] = useState("");
@@ -68,6 +69,67 @@ export default function Gallery() {
   const photos = photosData ?? [];
   const parentDogs = parentDogsData ?? [];
   const isLoading = photosData === undefined;
+  const selectedPhoto = selectedPhotoIndex !== null ? photos[selectedPhotoIndex] : null;
+
+  // Lightbox navigation
+  const goToPrevious = useCallback(() => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex > 0) {
+      setImageLoaded(false);
+      setSelectedPhotoIndex(selectedPhotoIndex - 1);
+    }
+  }, [selectedPhotoIndex]);
+
+  const goToNext = useCallback(() => {
+    if (selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1) {
+      setImageLoaded(false);
+      setSelectedPhotoIndex(selectedPhotoIndex + 1);
+    }
+  }, [selectedPhotoIndex, photos.length]);
+
+  const closeLightbox = useCallback(() => {
+    setSelectedPhotoIndex(null);
+    setImageLoaded(false);
+  }, []);
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedPhotoIndex === null) return;
+
+      switch (e.key) {
+        case 'Escape':
+          closeLightbox();
+          break;
+        case 'ArrowLeft':
+          goToPrevious();
+          break;
+        case 'ArrowRight':
+          goToNext();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedPhotoIndex, goToPrevious, goToNext, closeLightbox]);
+
+  // Prevent body scroll when lightbox is open
+  useEffect(() => {
+    if (selectedPhotoIndex !== null) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedPhotoIndex]);
+
+  // Get the best available image URL
+  const getImageUrl = (photo: GalleryPhotoData) => {
+    // Prefer imageUrl (resolved from Convex storage) over url
+    return photo.imageUrl || photo.url;
+  };
 
   // Convert storage URL to serving endpoint with compression support
   const convertToPublicUrl = (storageUrl: string, options?: {
@@ -76,8 +138,13 @@ export default function Gallery() {
     height?: number;
     compress?: boolean;
   }) => {
+    // If it's already a full URL (from Convex storage), use it directly
+    if (storageUrl.startsWith('https://')) {
+      return storageUrl;
+    }
+
     let publicUrl = storageUrl;
-    
+
     // Handle /objects/uploads/ URLs by converting to public serving endpoint
     if (storageUrl.startsWith('/objects/uploads/')) {
       publicUrl = storageUrl.replace('/objects/uploads/', '/public-objects/uploads/');
@@ -88,10 +155,10 @@ export default function Gallery() {
         publicUrl = `/public-objects/uploads/${matches[1]}`;
       }
     }
-    
-    // Add compression parameters for fast loading
+
+    // Add compression parameters for fast loading (only for local endpoints)
     const params = new URLSearchParams();
-    
+
     if (options?.compress !== false) {
       params.append('compress', 'true');
     }
@@ -104,14 +171,14 @@ export default function Gallery() {
     if (options?.height) {
       params.append('height', options.height.toString());
     }
-    
+
     // Add cache-busting parameter to force fresh orientation processing
     params.append('v', '20250825-orientation-fix');
-    
+
     if (params.toString()) {
       publicUrl += `?${params.toString()}`;
     }
-    
+
     return publicUrl;
   };
 
@@ -545,25 +612,28 @@ export default function Gallery() {
               ))}
             </div>
           ) : photos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {photos.map((photo) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {photos.map((photo, index) => (
                 <div
                   key={photo._id}
                   className="group relative aspect-square rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => setSelectedPhoto(photo)}
                   data-testid={`gallery-photo-${photo._id}`}
                 >
-                  <OrientationFixedImage
-                    src={convertToPublicUrl(photo.url, { width: 400, quality: 65, compress: true })}
+                  <LazyImage
+                    src={convertToPublicUrl(getImageUrl(photo), { width: 300, quality: 50, compress: true })}
                     alt={photo.caption || "Gallery photo"}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
+                    placeholderClassName="w-full h-full"
+                    onClick={() => {
+                      setImageLoaded(false);
+                      setSelectedPhotoIndex(index);
+                    }}
                   />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center pointer-events-none">
                     <Eye className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                   {photo.caption && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 pointer-events-none">
                       <p className="text-white text-sm font-medium truncate">{photo.caption}</p>
                     </div>
                   )}
@@ -607,48 +677,88 @@ export default function Gallery() {
         </div>
       </section>
 
-      {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl p-0 bg-white">
-          <DialogTitle className="sr-only">Gallery Photo</DialogTitle>
-          {selectedPhoto && (
-            <div className="relative">
-              <button
-                onClick={() => setSelectedPhoto(null)}
-                className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                data-testid="close-photo-modal"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <div className="relative">
-                {/* Low quality preview loads first */}
-                <OrientationFixedImage
-                  src={convertToPublicUrl(selectedPhoto.url, { width: 800, quality: 60, compress: true })}
-                  alt={selectedPhoto.caption || "Gallery photo"}
-                  className="w-full h-auto max-h-[80vh] object-contain opacity-50 blur-sm"
-                />
-                
-                {/* High quality image loads on top */}
-                <OrientationFixedImage
-                  src={convertToPublicUrl(selectedPhoto.url, { width: 1400, quality: 85, compress: true })}
-                  alt={selectedPhoto.caption || "Gallery photo"}
-                  className="w-full h-auto max-h-[80vh] object-contain absolute inset-0 opacity-0 transition-opacity duration-500"
-                  onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                    e.currentTarget.style.opacity = '1';
-                    const preview = e.currentTarget.previousElementSibling as HTMLImageElement;
-                    if (preview) preview.style.display = 'none';
-                  }}
-                />
-              </div>
-              {selectedPhoto.caption && (
-                <div className="p-6 bg-white">
-                  <p className="text-gray-800 text-center font-medium">{selectedPhoto.caption}</p>
-                </div>
-              )}
+      {/* Custom Lightbox */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Dark backdrop */}
+          <div className="absolute inset-0 bg-black/95" />
+
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+            data-testid="close-photo-modal"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Navigation buttons */}
+          {selectedPhotoIndex !== null && selectedPhotoIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToPrevious();
+              }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              data-testid="lightbox-prev"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {selectedPhotoIndex !== null && selectedPhotoIndex < photos.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                goToNext();
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-all duration-200 backdrop-blur-sm"
+              data-testid="lightbox-next"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Loading spinner - centered on screen */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-white" />
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+
+          {/* Image container */}
+          <div
+            className="relative z-10 flex flex-col items-center justify-center w-full h-full p-4 md:p-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Main image */}
+            <img
+              src={convertToPublicUrl(getImageUrl(selectedPhoto), { compress: false })}
+              alt={selectedPhoto.caption || "Gallery photo"}
+              className={`max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg shadow-2xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setImageLoaded(true)}
+              draggable={false}
+            />
+
+            {/* Caption */}
+            {selectedPhoto.caption && imageLoaded && (
+              <div className="mt-4 px-6 py-3 bg-black/50 backdrop-blur-sm rounded-full max-w-[90vw]">
+                <p className="text-white text-center font-medium text-sm md:text-base truncate">{selectedPhoto.caption}</p>
+              </div>
+            )}
+
+            {/* Photo counter */}
+            {imageLoaded && (
+              <div className="mt-3 text-white/60 text-sm">
+                {selectedPhotoIndex !== null && `${selectedPhotoIndex + 1} / ${photos.length}`}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

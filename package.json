@@ -8,11 +8,22 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc",
+    "setup": "node scripts/setup.js",
+    "setup:win": "scripts\\setup-cli.bat",
+    "setup:unix": "./scripts/setup-cli.sh",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel",
     "deploy:logs": "vercel logs",
     "deploy:list": "vercel ls",
-    "deploy:inspect": "vercel inspect"
+    "deploy:inspect": "vercel inspect",
+    "deploy:all": "./scripts/deploy.sh all",
+    "deploy:status": "./scripts/deploy.sh status",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy",
+    "convex:dashboard": "convex dashboard",
+    "logs": "./scripts/logs.sh",
+    "logs:vercel": "./scripts/logs.sh vercel",
+    "logs:convex": "./scripts/logs.sh convex"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.16.0",

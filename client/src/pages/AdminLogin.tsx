@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
 import { Eye, EyeOff, ShieldQuestion } from "lucide-react";
 import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 
@@ -14,6 +15,7 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
+  const loginMutation = useMutation(api.adminUsers.login);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -26,17 +28,37 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      await apiRequest("POST", "/api/admin/login", formData);
+      // Use secure server-side login mutation
+      // Password is validated on the server, never exposed to client
+      const result = await loginMutation({
+        username: formData.username,
+        password: formData.password,
+      });
+
+      if (!result.success) {
+        toast({
+          title: "Login Failed",
+          description: result.message || "Invalid credentials",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Store admin user info in localStorage (no password included)
+      localStorage.setItem("adminUser", JSON.stringify(result.user));
       login(); // Set local authentication state
+
       toast({
         title: "Success",
         description: "Successfully logged in to Puppy Portal",
       });
+
       setLocation("/admin");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Login error:", error);
       toast({
-        title: "Login Failed", 
-        description: "Invalid username or password",
+        title: "Login Failed",
+        description: "Connection error. Please try again.",
         variant: "destructive",
       });
     } finally {

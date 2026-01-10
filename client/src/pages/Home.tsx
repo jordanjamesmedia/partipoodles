@@ -6,8 +6,8 @@ import PuppyCard from "@/components/PuppyCard";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Heart, Phone, Eye, HeartPulse, Home as HomeIcon, Award, Users, Brain, Leaf, Palette } from "lucide-react";
-import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 import familyPoodleImage from "@assets/1_1754364343232.png";
+import pawPrintImage from "@assets/puppy paw print_1754361694595.png";
 import { useSEO } from "@/hooks/useSEO";
 
 export default function Home() {
@@ -46,18 +46,36 @@ export default function Home() {
     <div className="min-h-screen bg-neutral-light">
       <Navigation />
       
-      {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center hero-bg">
-        {/* Animated dog paw print icons - subtle and random */}
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-1 opacity-0 w-6 h-6 rotate-12" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-2 opacity-0 w-4 h-4 -rotate-45" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-3 opacity-0 w-5 h-5 rotate-90" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-4 opacity-0 w-7 h-7 -rotate-12" />
-        <img src={pawPrintImage} alt="Paw print" className="absolute paw-print paw-print-5 opacity-0 w-3 h-3 rotate-45" />
-        
-        <div className="relative z-10 text-center text-gray-800 max-w-4xl mx-auto px-4">
+      {/* Hero Section - Clean cream background with subtle paw pattern */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#e8ddd0]">
+        {/* Subtle paw print pattern */}
+        <div className="absolute inset-0 opacity-[0.05]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url(${pawPrintImage})`,
+            backgroundSize: '80px 80px',
+            backgroundRepeat: 'repeat',
+          }}></div>
+        </div>
+
+        {/* Large decorative paw print - top left */}
+        <img
+          src={pawPrintImage}
+          alt=""
+          className="absolute -top-10 -left-10 w-72 h-72 opacity-20 rotate-[25deg]"
+          aria-hidden="true"
+        />
+
+        {/* Large decorative paw print - bottom right */}
+        <img
+          src={pawPrintImage}
+          alt=""
+          className="absolute -bottom-16 -right-16 w-80 h-80 opacity-25 rotate-[-15deg]"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10 text-center max-w-4xl mx-auto px-4 py-20">
           <h1 className="text-5xl md:text-7xl font-serif font-bold mb-6 leading-tight">
-            Premium Standard<br />
+            <span className="text-gray-800">Premium Standard</span><br />
             <span className="text-primary">Parti Poodles</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 font-light text-gray-600">
@@ -66,13 +84,13 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/puppies">
-              <Button className="btn-primary" data-testid="button-view-puppies">
+              <Button className="bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg px-8 py-6 text-lg font-semibold transition-colors" data-testid="button-view-puppies">
                 <Heart className="mr-2 h-6 w-6" />
                 View Available Puppies
               </Button>
             </Link>
             <Link href="/contact">
-              <Button className="btn-secondary" data-testid="button-contact-us">
+              <Button className="bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white shadow-lg px-8 py-6 text-lg font-semibold transition-colors" data-testid="button-contact-us">
                 <Phone className="mr-2 h-6 w-6" />
                 Contact Us
               </Button>
