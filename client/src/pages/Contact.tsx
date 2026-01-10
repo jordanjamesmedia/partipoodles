@@ -3,8 +3,15 @@ import Footer from "@/components/Footer";
 import ContactForm from "@/components/forms/ContactForm";
 import { Button } from "@/components/ui/button";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function Contact() {
+  useSEO({
+    title: 'Contact Us - Enquire About Puppies',
+    description: 'Contact Parti Poodles Australia to enquire about available Standard Parti Poodle puppies. Located in Mansfield, Victoria. Call +61 498 114 541.',
+    canonical: '/contact'
+  });
+
   return (
     <div className="min-h-screen bg-neutral-light">
       <Navigation />
